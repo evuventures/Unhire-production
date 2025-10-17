@@ -3,9 +3,9 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 
-//import authRoutes from './routes/auth.routes.js';
-//import profileRoutes from './routes/profile.routes.js';
-//import adminRoutes from './routes/admin.routes.js';
+import authRoutes from './routes/auth.routes.js';
+import profileRoutes from './routes/profile.routes.js';
+import adminRoutes from './routes/admin.routes.js';
 
 dotenv.config();
 const app = express();
@@ -13,7 +13,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// MongoDB connection
+// MongoDB
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('MongoDB connected'))
     .catch(err => {
@@ -21,10 +21,10 @@ mongoose.connect(process.env.MONGO_URI)
         process.exit(1);
     });
 
-// // Routes
-// app.use('/api/auth', authRoutes);
-// app.use('/api/profile', profileRoutes);
-// app.use('/api/admin', adminRoutes);
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/profile', profileRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.get('/', (req, res) => res.send('Server is running!'));
 
