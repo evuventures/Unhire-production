@@ -1,4 +1,7 @@
-import { createProjectService, getAllProjectsService, getProjectStatusService } from "../services/project.service.js";
+import {  createProjectService,
+          getAllProjectsService,
+          getProjectStatusService,
+          recommendExpertsForProjectService } from "../services/project.service.js";
 
 export const createProject = async (req, res) => {
   try {
@@ -17,7 +20,7 @@ export const createProject = async (req, res) => {
       paymentTerms,
       startDate,
       endDate,
-      deadline, // new required field
+      deadline, 
       experienceLevel,
       locationPreference,
       language,
@@ -55,12 +58,28 @@ export const createProject = async (req, res) => {
       links,
     };
 
+
+      // 1️⃣ Create the project
     const project = await createProjectService(projectData);
-    res.status(201).json({ message: "Project created successfully", project });
+
+    // 2️⃣ Immediately trigger Gemini expert recommendation
+    const recommendedExperts = await recommendExpertsForProjectService(project);
+
+    console.log("Recommended experts by Gemini:", recommendedExperts);
+    
+    res.status(201).json({
+      message: "Project created successfully",
+      project,
+      recommendedExperts,
+    });
   } catch (err) {
-    res.status(500).json({ message: "Error creating project", error: err.message });
+    console.error(err);
+    res
+      .status(500)
+      .json({ message: "Error creating project", error: err.message });
   }
 };
+
 
 export const getAllProjects = async (req, res) => {
   try {
