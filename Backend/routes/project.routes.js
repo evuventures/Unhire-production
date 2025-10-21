@@ -4,6 +4,10 @@ import { protect, authorizeRoles } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
 
+
+
+// Client creates project → Gemini recommendation triggers automatically
+
 router.post("/", protect, authorizeRoles("client"), createProject); // client posts project
 router.get("/", protect, getAllProjects); // list all projects
 

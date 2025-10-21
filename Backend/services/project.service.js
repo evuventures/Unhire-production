@@ -1,4 +1,7 @@
 import { Project } from "../models/project.model.js";
+import User from "../models/user.model.js";
+import { getExpertRecommendations } from "../utils/LLMengine.js";
+
 
 export const createProjectService = async (projectData) => {
   // projectData now expects `deadline` and no longer includes `jobType`
@@ -59,4 +62,37 @@ export const getProjectStatusService = async (projectId) => {
     draftSubmitted: project.draftSubmitted,
     remainingTime: remaining,
   };
+};
+
+
+
+// 🔥 NEW SERVICE: Gemini recommendation
+export const recommendExpertsForProjectService = async (project) => {
+  try {
+    // Fetch experts
+    const experts = await User.find({ role: "expert" }).select(
+      "_id name skills rating"
+    );
+    if (!experts.length) return [];
+
+    // Ask Gemini to rank them
+    const ranked = await getExpertRecommendations(project, experts);
+
+    const topExpertIds = ranked
+      .map((r) => r.expertId)
+      .filter((id) => experts.find((e) => e._id.toString() === id));
+
+    const topExperts = experts.filter((e) =>
+      topExpertIds.includes(e._id.toString())
+    );
+
+    // Save to project
+    project.notifiedExperts = topExperts.map((e) => e._id);
+    await project.save();
+
+    return topExperts;
+  } catch (err) {
+    console.error("AI recommend service error:", err.message);
+    return [];
+  }
 };
