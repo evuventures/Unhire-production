@@ -13,7 +13,18 @@ import projectRoutes from "./routes/project.routes.js";
 dotenv.config();
 const app = express();
 
-app.use(cors());
+// ---------- CORS ----------
+const allowedOrigins = [
+  "http://localhost:5173", // React dev server
+  "https://your-frontend-domain.vercel.app" // production frontend URL
+];
+
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true, // allow cookies/auth headers
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
+
 app.use(express.json());
 
 // MongoDB
