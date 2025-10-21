@@ -6,7 +6,28 @@ const userSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     role: { type: String, enum: ['client', 'expert', 'admin'], default: 'client' },
-}, { timestamps: true });
+
+      // --- NEW FIELDS FOR EXPERTS ---
+    skills: {
+      type: [String],
+      required:true, // e.g. ["Node.js", "React", "MongoDB"]
+    },
+    rating: {
+      type: Number,
+      default: 0, // 0–5 scale based on client feedback
+    },
+    totalProjects: {
+      type: Number,
+      default: 0,
+    },
+    bio: {
+      type: String,
+      default: "",
+    },
+  },
+  { timestamps: true }
+);
+
 
 // Hash password
 userSchema.pre('save', async function(next) {
