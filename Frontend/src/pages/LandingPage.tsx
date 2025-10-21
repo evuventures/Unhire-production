@@ -30,18 +30,20 @@ const LandingPage: React.FC = () => {
                     </h2>
                   </div>
                   <div className="flex-wrap gap-4 flex">
-                    <Link
-                      to="/post-job"
-                      className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-12 px-6 bg-gradient-to-br from-[#87CEEB] to-[#AFEEEE] text-white text-base font-bold leading-normal tracking-[0.015em] shadow-lg hover:from-[#AFEEEE] hover:to-[#87CEEB] transition-all duration-300 transform hover:scale-105"
-                    >
-                      <span className="truncate">Hire instantly</span>
-                    </Link>
-                    <Link
-                      to="/find-jobs"
-                      className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-12 px-6 bg-[#F08080] text-white text-base font-bold leading-normal tracking-[0.015em] shadow-lg hover:bg-opacity-90 transition-all duration-300 transform hover:scale-105"
-                    >
-                      <span className="truncate">Work instantly</span>
-                    </Link>
+<Link
+  to="/signup?role=client"
+  className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-12 px-6 bg-gradient-to-br from-[#87CEEB] to-[#AFEEEE] text-white text-base font-bold leading-normal tracking-[0.015em] shadow-lg hover:from-[#AFEEEE] hover:to-[#87CEEB] transition-all duration-300 transform hover:scale-105"
+>
+  <span className="truncate">Hire instantly</span>
+</Link>
+
+<Link
+  to="/signup?role=expert"
+  className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-12 px-6 bg-[#F08080] text-white text-base font-bold leading-normal tracking-[0.015em] shadow-lg hover:bg-opacity-90 transition-all duration-300 transform hover:scale-105"
+>
+  <span className="truncate">Work instantly</span>
+</Link>
+
                   </div>
                 </div>
               </div>
