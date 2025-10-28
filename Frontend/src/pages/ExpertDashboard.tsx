@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Bell } from 'lucide-react';
-import logo from '../assets/logo.svg';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
 
 interface Project {
   id: string;
@@ -28,22 +28,7 @@ const ExpertDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header */}
-      <header className="flex items-center justify-between border-b border-gray-200 px-10 py-4 bg-white">
-        <div className="flex items-center gap-3">
-          <img src={logo} alt="Unhire Logo" className="h-8 w-auto" />
-          <span className="text-xl font-bold text-gray-900">Expert Dashboard</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <button className="relative flex items-center justify-center size-10 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors">
-            <Bell size={20} />
-          </button>
-          <div
-            className="bg-center bg-no-repeat aspect-square bg-cover rounded-full w-10 h-10 border-2 border-transparent hover:border-[#87CEEB] transition-colors cursor-pointer"
-            style={{ backgroundImage: 'url("https://images.pexels.com/photos/3184292/pexels-photo-3184292.jpeg?auto=compress&cs=tinysrgb&w=100")' }}
-          />
-        </div>
-      </header>
+      <Header />
 
       {/* Main */}
       <main className="flex-1 px-10 py-16">
@@ -72,6 +57,7 @@ const ExpertDashboard: React.FC = () => {
           )}
         </div>
       </main>
+      <Footer />
     </div>
   );
 };
