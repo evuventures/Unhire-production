@@ -13,6 +13,13 @@ export const getAllProjectsService = async () => {
   return await Project.find().populate("clientId assignedExpert", "name email role");
 };
 
+export const getProjectsByClientIdService = async (clientId) => {
+  return await Project.find({ clientId }).populate(
+    "clientId assignedExpert",
+    "name email role"
+  );
+};
+
 export const markExpiredProjectsService = async () => {
   // timer logic for testing: 1 minute
   const threeHoursAgo = new Date(Date.now() - 1 * 60 * 1000);

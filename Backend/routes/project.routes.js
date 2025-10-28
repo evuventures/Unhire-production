@@ -1,5 +1,5 @@
 import express from "express";
-import { createProject, getAllProjects, getProjectStatus } from "../controllers/project.controller.js";
+import { createProject, getAllProjects, getProjectsByClientId, getProjectStatus } from "../controllers/project.controller.js";
 import { protect, authorizeRoles } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
@@ -10,6 +10,7 @@ const router = express.Router();
 
 router.post("/", protect, authorizeRoles("client"), createProject); // client posts project
 router.get("/", protect, getAllProjects); // list all projects
+router.get("/client/:clientId", protect, authorizeRoles("client"), getProjectsByClientId); // list all projects for a client
 
 // GET /api/projects/:id/status
 router.get("/:id/status", protect, getProjectStatus);
