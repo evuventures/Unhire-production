@@ -56,14 +56,18 @@ const PostProjectPage: React.FC = () => {
         throw new Error(errorData.message || 'Failed to post project');
       }
 
-      const result = await response.json();
+      await response.json();
       setSuccess('Project posted successfully! Redirecting to dashboard...');
       setTimeout(() => {
         navigate('/client-dashboard');
       }, 2000);
 
     } catch (err) {
-      setError(err.message);
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('An unknown error occurred');
+      }
     } finally {
       setLoading(false);
     }

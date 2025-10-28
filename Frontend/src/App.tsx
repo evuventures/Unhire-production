@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
 // import PostJobPage from './pages/PostJobPage';
@@ -9,6 +8,7 @@ import AboutPage from "./pages/AboutPage";
 import PricingPage from "./pages/PricingPage";
 import ClientDashboard from './pages/ClientDashboard';
 import ExpertDashboard from './pages/ExpertDashboard';
+import PostProjectPage from './pages/PostProjectPage';
 
 function App() {
   return (
@@ -22,6 +22,7 @@ function App() {
         <Route path="/expert-dashboard" element={<ExpertDashboard />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/post-project" element={<PostProjectPage />} />
         </Routes>
       </div>
     </Router>
