@@ -1,5 +1,6 @@
 import {  createProjectService,
           getAllProjectsService,
+          getProjectsByClientIdService,
           getProjectStatusService,
           recommendExpertsForProjectService } from "../services/project.service.js";
 
@@ -90,6 +91,17 @@ export const getAllProjects = async (req, res) => {
   }
 };
 
+export const getProjectsByClientId = async (req, res) => {
+  try {
+    const { clientId } = req.params;
+    const projects = await getProjectsByClientIdService(clientId);
+    res.status(200).json(projects);
+  } catch (err) {
+    res
+      .status(500)
+      .json({ message: "Error fetching projects", error: err.message });
+  }
+};
 
 
 export const getProjectStatus = async (req, res) => {
