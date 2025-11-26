@@ -40,11 +40,27 @@ const projectSchema = new mongoose.Schema({
     ref: "User",
     default: null,
   },
+  assignedAt: {
+    type: Date,
+    default: null,
+  },
   draftSubmitted: { type: Boolean, default: false },
+  draftContent: {
+    type: String,
+    default: null,
+  },
+  draftUrl: {
+    type: String,
+    default: null,
+  },
+  submittedAt: {
+    type: Date,
+    default: null,
+  },
 
   status: {
     type: String,
-    enum: ["active", "unassigned", "completed", "expired"],
+    enum: ["active", "unassigned", "in_progress", "submitted", "completed", "expired", "timeout"],
     default: "active",
   },
 
