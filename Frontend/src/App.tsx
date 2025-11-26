@@ -9,6 +9,9 @@ import PricingPage from "./pages/PricingPage";
 import ClientDashboard from './pages/ClientDashboard';
 import ExpertDashboard from './pages/ExpertDashboard';
 import PostProjectPage from './pages/PostProjectPage';
+import ProfilePage from './pages/ProfilePage';
+import SettingsPage from './pages/SettingsPage';
+import PaymentsPage from './pages/PaymentsPage';
 
 function App() {
   return (
@@ -16,13 +19,16 @@ function App() {
       <div className="min-h-screen bg-gray-50" style={{ fontFamily: 'Manrope, "Noto Sans", sans-serif' }}>
         <Routes>
           <Route path="/" element={<LandingPage />} />
-        <Route path="/signup" element={<SignupPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/client-dashboard" element={<ClientDashboard />} />
-        <Route path="/expert-dashboard" element={<ExpertDashboard />} />
-        <Route path="/about" element={<AboutPage />} />
-        <Route path="/pricing" element={<PricingPage />} />
-        <Route path="/post-project" element={<PostProjectPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/client-dashboard" element={<ClientDashboard />} />
+          <Route path="/expert-dashboard" element={<ExpertDashboard />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/post-project" element={<PostProjectPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/payments" element={<PaymentsPage />} />
         </Routes>
       </div>
     </Router>
