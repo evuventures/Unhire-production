@@ -17,9 +17,12 @@ const SignupPage: React.FC = () => {
     password: "",
     role: roleFromURL || "client",
     skills: "",
+    linkedin: "",
+    resumePath: "",
   });
 
   const [loading, setLoading] = useState(false);
+  const [uploadingResume, setUploadingResume] = useState(false); // New state for upload loading
 
   useEffect(() => {
     if (roleFromURL) setForm(prev => ({ ...prev, role: roleFromURL }));
@@ -31,6 +34,40 @@ const SignupPage: React.FC = () => {
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
+  const handleResumeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const formData = new FormData();
+      formData.append("resume", file);
+
+      setUploadingResume(true);
+      try {
+        const res = await fetch(`${backendUrl}/api/utils/resume-parse`, {
+          method: "POST",
+          body: formData, // No Content-Type header needed, browser sets it
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          setForm(prev => ({
+            ...prev,
+            skills: data.extractedSkills.join(", "),
+            resumePath: data.filePath
+          }));
+          alert("Resume parsed successfully! Skills auto-filled.");
+        } else {
+          alert("Failed to parse resume: " + data.message);
+        }
+      } catch (err) {
+        console.error("Resume upload error:", err);
+        alert("Error uploading resume");
+      } finally {
+        setUploadingResume(false);
+      }
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -38,7 +75,10 @@ const SignupPage: React.FC = () => {
     // Prepare payload
     const payload = {
       ...form,
+      ...form,
       skills: form.role === "expert" ? form.skills.split(",").map(s => s.trim()) : [],
+      linkedin: form.role === "expert" ? form.linkedin : "",
+      resume: form.role === "expert" ? form.resumePath : "", // Send the path returned from parse
     };
 
     console.log("Sending signup payload:", payload);
@@ -84,7 +124,7 @@ const SignupPage: React.FC = () => {
             <input type="text" name="name" placeholder="Full Name" value={form.name} onChange={handleChange} className="w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-700 focus:ring-2 focus:ring-[#87CEEB] outline-none" required />
             <input type="email" name="email" placeholder="Email Address" value={form.email} onChange={handleChange} className="w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-700 focus:ring-2 focus:ring-[#87CEEB] outline-none" required />
             <input type="password" name="password" placeholder="Password" value={form.password} onChange={handleChange} className="w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-700 focus:ring-2 focus:ring-[#87CEEB] outline-none" required />
-            
+
             <select name="role" value={form.role} onChange={handleChange} className="w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-700 focus:ring-2 focus:ring-[#87CEEB] outline-none">
               <option value="client">Client</option>
               <option value="expert">Expert</option>
@@ -92,7 +132,17 @@ const SignupPage: React.FC = () => {
             </select>
 
             {form.role === "expert" && (
-              <textarea name="skills" placeholder="Enter skills (comma separated)" value={form.skills} onChange={handleChange} className="w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-700 focus:ring-2 focus:ring-[#87CEEB] outline-none" required />
+              <>
+                <input type="url" name="linkedin" placeholder="LinkedIn Profile URL" value={form.linkedin} onChange={handleChange} className="w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-700 focus:ring-2 focus:ring-[#87CEEB] outline-none" />
+
+                <div className="w-full">
+                  <label className="block text-sm font-medium text-gray-700 mb-1 ml-1">Upload Resume (PDF) - Auto-fills Skills</label>
+                  <input type="file" accept=".pdf" onChange={handleResumeUpload} className="w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-700 focus:ring-2 focus:ring-[#87CEEB] outline-none" />
+                  {uploadingResume && <p className="text-sm text-blue-500 mt-1">Parsing resume...</p>}
+                </div>
+
+                <textarea name="skills" placeholder="Skills (comma separated) or upload resume" value={form.skills} onChange={handleChange} className="w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-700 focus:ring-2 focus:ring-[#87CEEB] outline-none" required />
+              </>
             )}
 
             <button type="submit" disabled={loading} className="w-full rounded-xl bg-gradient-to-br from-[#87CEEB] to-[#AFEEEE] text-white font-bold py-3 mt-2 hover:from-[#AFEEEE] hover:to-[#87CEEB] shadow-md transition-transform transform hover:scale-105">

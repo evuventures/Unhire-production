@@ -8,6 +8,7 @@ import profileRoutes from './routes/profile.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import projectRoutes from "./routes/project.routes.js";
 import expertRoutes from "./routes/expert.routes.js";
+import utilsRoutes from "./routes/utils.routes.js";
 import { startProjectMonitor } from "./cron/projectMonitor.js";
 
 
@@ -42,6 +43,8 @@ app.use('/api/profile', profileRoutes);
 app.use('/api/admin', adminRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/expert", expertRoutes);
+app.use('/api/utils', utilsRoutes);
+app.use('/uploads', express.static('uploads'));
 
 
 

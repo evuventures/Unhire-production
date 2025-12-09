@@ -1,7 +1,7 @@
 import User from '../models/user.model.js';
 import generateToken from '../utils/generateToken.js';
 
-export const signupUser = async ({ name, email, password, role, skills, rating }) => {
+export const signupUser = async ({ name, email, password, role, skills, rating, linkedin, resume }) => {
     const existingUser = await User.findOne({ email });
     if (existingUser) throw new Error('User already exists');
 
@@ -11,6 +11,8 @@ export const signupUser = async ({ name, email, password, role, skills, rating }
     if (role === "expert") {
         userData.skills = skills || [];
         userData.rating = rating || 0;
+        userData.linkedin = arguments[0].linkedin || "";
+        userData.resume = arguments[0].resume || "";
     }
 
     const user = await User.create(userData);
