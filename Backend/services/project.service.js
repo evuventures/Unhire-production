@@ -67,6 +67,8 @@ export const getProjectStatusService = async (projectId) => {
     client: project.clientId,
     assignedExpert: project.assignedExpert,
     draftSubmitted: project.draftSubmitted,
+    draftContent: project.draftContent,
+    draftUrl: project.draftUrl,
     remainingTime: remaining,
   };
 };
@@ -102,4 +104,42 @@ export const recommendExpertsForProjectService = async (project) => {
     console.error("AI recommend service error:", err.message);
     return [];
   }
+};
+
+export const reviewProjectService = async (projectId, clientId, decision, feedback) => {
+  const project = await Project.findById(projectId);
+  if (!project) throw new Error("Project not found");
+
+  if (project.clientId.toString() !== clientId) {
+    throw new Error("Unauthorized: Only the project owner can review this project");
+  }
+
+  if (project.status !== "submitted") {
+    throw new Error("Project is not in a submitted state");
+  }
+
+  if (decision === "accept") {
+    project.status = "completed";
+    project.completedAt = new Date();
+    // TODO: Trigger payment release here
+  } else if (decision === "reject") {
+    project.attemptsCount += 1;
+
+    if (project.attemptsCount >= 3) {
+      project.status = "expired";
+    } else {
+      // Re-open for other experts
+      project.status = "unassigned";
+      project.assignedExpert = null;
+      project.assignedAt = null;
+      project.draftSubmitted = false;
+      project.draftContent = null;
+      project.draftUrl = null;
+      project.submittedAt = null;
+    }
+  } else {
+    throw new Error("Invalid decision. Must be 'accept' or 'reject'");
+  }
+
+  return await project.save();
 };

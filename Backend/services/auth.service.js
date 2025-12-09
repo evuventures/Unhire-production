@@ -11,8 +11,8 @@ export const signupUser = async ({ name, email, password, role, skills, rating, 
     if (role === "expert") {
         userData.skills = skills || [];
         userData.rating = rating || 0;
-        userData.linkedin = arguments[0].linkedin || "";
-        userData.resume = arguments[0].resume || "";
+        userData.linkedin = linkedin || "";
+        userData.resume = resume || "";
     }
 
     const user = await User.create(userData);
