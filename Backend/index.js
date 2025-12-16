@@ -15,10 +15,11 @@ dotenv.config();
 const app = express();
 
 // ---------- CORS ----------
-const allowedOrigins = [
-  "http://localhost:5173", // React dev server
-  "https://your-frontend-domain.vercel.app" // production frontend URL
-];
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',')
+  : [
+    "http://localhost:5173", // React dev server default
+  ];
 
 app.use(cors({
   origin: allowedOrigins,
