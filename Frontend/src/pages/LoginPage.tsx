@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { GoogleLogin } from "@react-oauth/google";
+import { jwtDecode } from "jwt-decode";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
@@ -48,6 +50,42 @@ const LoginPage: React.FC = () => {
       alert("Error logging in.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    const decoded: any = jwtDecode(credentialResponse.credential);
+    try {
+      const res = await fetch(`${backendUrl}/api/auth/google-login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: decoded.name,
+          email: decoded.email,
+          googleId: decoded.sub,
+          avatar: decoded.picture
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify({
+          _id: data._id,
+          name: data.name,
+          email: data.email,
+          role: data.role
+        }));
+
+        if (data.role === "client") navigate("/client-dashboard");
+        else if (data.role === "expert") navigate("/expert-dashboard");
+        else navigate("/");
+      } else {
+        alert(data.message || "Google Login failed.");
+      }
+    } catch (err) {
+      console.error("Google Login error:", err);
+      alert("Error logging in with Google.");
     }
   };
 
@@ -126,6 +164,25 @@ const LoginPage: React.FC = () => {
                     </>
                   )}
                 </button>
+
+                <div className="relative my-8">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-white/5"></div>
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-[#050505] px-2 text-text-secondary">Or continue with</span>
+                  </div>
+                </div>
+
+                <div className="flex justify-center">
+                  <GoogleLogin
+                    onSuccess={handleGoogleSuccess}
+                    onError={() => console.log('Login Failed')}
+                    theme="filled_black"
+                    shape="pill"
+                    text="continue_with"
+                  />
+                </div>
               </form>
 
               <p className="text-center text-text-secondary text-sm mt-8 py-2 border-t border-white/5">

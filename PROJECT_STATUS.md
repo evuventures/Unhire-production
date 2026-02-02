@@ -12,6 +12,7 @@
 #### Authentication & User Management
 - ✅ User signup (`POST /api/auth/signup`)
 - ✅ User login (`POST /api/auth/login`)
+- ✅ Google Sign-In (`POST /api/auth/google-login`)
 - ✅ JWT authentication middleware
 - ✅ Role-based authorization (client, expert, admin)
 
@@ -37,6 +38,8 @@
 #### Background Jobs
 - ✅ Node Cron job scheduler running
 - ✅ Project monitor cron job (marks expired projects)
+- ✅ Real-time Notification system (`api/notifications`)
+- ✅ Automated notifications on project creation
 
 ---
 
@@ -66,13 +69,18 @@
   - **Real-time countdown timers** for active projects
   - **Draft submission modal** (content + URL)
   - Color-coded time urgency (green > 1hr, yellow 30min-1hr, red < 30min)
-  - Status badges for projects
+  - ✅ Status badges for projects
+  - ✅ **Notification Bell & Dropdown** (with mark-as-read functionality)
 
 #### Expert Profile & Settings
 - ✅ Profile Page (`/profile`)
   - View/Edit profile
   - Update name, bio, skills
   - Display statistics
+- ✅ Expert Onboarding (`/onboarding`)
+  - Manual skills entry
+  - LinkedIn sync simulation
+  - Automatic redirect for new experts
   
 - ✅ Settings Page (`/settings`)
   - Notification preferences (Email, Project Alerts, Marketing)
@@ -108,9 +116,8 @@
      - `POST /api/experts/:id/reject`
      - `GET /api/dashboard/analytics`
 
-3. **Profile Update API** ❌ NOT IMPLEMENTED
-   - Frontend calls `PUT /api/profile/update`
-   - Backend route/controller missing
+3. **Profile Update API** ✅ COMPLETED
+   - `PUT /api/profile/update` implemented
 
 4. **Cron Jobs** ⚠️ PARTIAL
    - Only basic project monitor exists
@@ -148,10 +155,10 @@
    - No expert onboarding form
    - Experts created directly via signup
 
-4. **Real-time Notifications** ❌ NOT IMPLEMENTED
-   - No Socket.io integration
-   - No real-time project alerts
-   - Relies on manual refresh
+4. **Real-time Notifications** ✅ COMPLETED
+   - Notification model and API implemented
+   - Trigger on project creation
+   - Header UI integration
 
 5. **File Upload** ❌ NOT IMPLEMENTED
    - No file upload for project attachments
@@ -372,4 +379,4 @@ npm run dev
 
 ---
 
-**Status**: MVP is ~70% complete. Core expert workflow is functional. Client review and admin features are the main gaps.
+**Status**: MVP is ~85% complete. Core expert workflow, onboarding, and notifications are functional. Client review and admin features are the final remaining gaps.

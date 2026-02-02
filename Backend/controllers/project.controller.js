@@ -1,8 +1,12 @@
-import {  createProjectService,
-          getAllProjectsService,
-          getProjectsByClientIdService,
-          getProjectStatusService,
-          recommendExpertsForProjectService } from "../services/project.service.js";
+import {
+  createProjectService,
+  getAllProjectsService,
+  getProjectsByClientIdService,
+  getProjectStatusService,
+  recommendExpertsForProjectService
+} from "../services/project.service.js";
+import User from "../models/user.model.js";
+import { createNotification } from "./notification.controller.js";
 
 export const createProject = async (req, res) => {
   try {
@@ -21,7 +25,7 @@ export const createProject = async (req, res) => {
       paymentTerms,
       startDate,
       endDate,
-      deadline, 
+      deadline,
       experienceLevel,
       locationPreference,
       language,
@@ -60,18 +64,30 @@ export const createProject = async (req, res) => {
     };
 
 
-      // 1️⃣ Create the project
+    // 1️⃣ Create the project
     const project = await createProjectService(projectData);
 
     // 2️⃣ Immediately trigger Gemini expert recommendation
     const recommendedExperts = await recommendExpertsForProjectService(project);
 
     console.log("Recommended experts by Gemini:", recommendedExperts);
-    
+
     res.status(201).json({
       message: "Project created successfully",
       project,
       recommendedExperts,
+    });
+
+    // Notify all experts asynchronously
+    const experts = await User.find({ role: 'expert' });
+    experts.forEach(expert => {
+      createNotification(
+        expert._id,
+        `New project posted: ${project.title}`,
+        'job_post',
+        project._id,
+        'Project'
+      );
     });
   } catch (err) {
     console.error(err);

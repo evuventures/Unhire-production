@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import { GoogleLogin } from "@react-oauth/google";
+import { jwtDecode } from "jwt-decode";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, User, Mail, Lock, Briefcase, ArrowRight, Loader2, Sparkles } from "lucide-react";
 import Header from "../components/Header";
@@ -63,6 +65,47 @@ const SignupPage: React.FC = () => {
       alert("Error signing up.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    const decoded: any = jwtDecode(credentialResponse.credential);
+    try {
+      const res = await fetch(`${backendUrl}/api/auth/google-login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: decoded.name,
+          email: decoded.email,
+          googleId: decoded.sub,
+          avatar: decoded.picture,
+          role: form.role // Use selected role
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify({
+          _id: data._id,
+          name: data.name,
+          email: data.email,
+          role: data.role
+        }));
+
+        if (data.role === "expert") {
+          // Check if profile is complete (e.g. has skills)
+          // For now, redirect to onboarding if it's an expert
+          navigate("/onboarding");
+        } else {
+          navigate("/client-dashboard");
+        }
+      } else {
+        alert(data.message || "Google Signup failed.");
+      }
+    } catch (err) {
+      console.error("Google Signup error:", err);
+      alert("Error signing up with Google.");
     }
   };
 
@@ -198,6 +241,25 @@ const SignupPage: React.FC = () => {
                     </>
                   )}
                 </button>
+
+                <div className="relative my-8">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-white/5"></div>
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-[#050505] px-2 text-text-secondary">Or continue with</span>
+                  </div>
+                </div>
+
+                <div className="flex justify-center">
+                  <GoogleLogin
+                    onSuccess={handleGoogleSuccess}
+                    onError={() => console.log('Signup Failed')}
+                    theme="filled_black"
+                    shape="pill"
+                    text="signup_with"
+                  />
+                </div>
               </form>
 
               <p className="text-center text-text-secondary text-sm mt-8 py-2 border-t border-white/5">

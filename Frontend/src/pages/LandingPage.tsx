@@ -1,11 +1,36 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { Briefcase, Users, Clock, ArrowRight, Star, Shield, Zap, CheckCircle2 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import {
+  Briefcase, Users, Clock, ArrowRight, Star, Shield, Zap, CheckCircle2, Search
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
 const LandingPage: React.FC = () => {
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<'client' | 'expert'>('client');
+
+  const clientServices = [
+    { category: "Admin & Support", services: ["Cold Callers", "Content Moderators", "Lead Generation Specialists", "Personal Assistants", "Virtual Assistants"] },
+    { category: "AI & Emerging Tech", services: ["Automation Engineers", "Chatbot Developers", "Computer Vision Engineers", "Ethical Hackers", "Machine Learning Engineers"] },
+    { category: "Design & Creative", services: ["Graphic Designers", "Illustrators", "Logo Designers", "UX Designers", "Web Designers"] },
+    { category: "Development & Tech", services: ["Mobile App Developers", "Python Developers", "Software Developers", "Web Developers", "WordPress Developers"] },
+    { category: "Marketing", services: ["Digital Marketers", "Email Marketers", "Google Ads Experts", "SEO Experts", "Social Media Managers"] },
+    { category: "Video & Animation", services: ["Animators", "Audio Editors", "Music Producers", "Video Editors", "Voice Actors"] },
+    { category: "Writing & Content", services: ["Book Editors", "Content Writers", "Copywriters", "Email Copywriters", "Ghostwriters"] },
+  ];
+
+  const expertJobs = [
+    { category: "Admin & Support", jobs: ["Chat Support Jobs", "Cold Calling Jobs", "Content Moderation Jobs", "Lead Generation Jobs", "Virtual Assistant Jobs"] },
+    { category: "AI & Emerging Tech", jobs: ["AI App Development Jobs", "Chatbot Development Jobs", "Ethical Hacking Jobs", "Machine Learning Jobs", "OpenAI Jobs"] },
+    { category: "Design & Creative", jobs: ["Canva Jobs", "Graphic Design Jobs", "Illustration Jobs", "Logo Design Jobs", "Web Design Jobs"] },
+    { category: "Development & Tech", jobs: ["Mobile App Development Jobs", "Python Jobs", "Software Development Jobs", "Web Development Jobs", "WordPress Jobs"] },
+    { category: "Marketing", jobs: ["Digital Marketing Jobs", "Email Marketing Jobs", "Google Ads Jobs", "SEO Jobs", "Social Media Management Jobs"] },
+    { category: "Video & Animation", jobs: ["Animation Jobs", "Audio Editing Jobs", "Music Production Jobs", "Video Editing Jobs", "Voice Over Jobs"] },
+    { category: "Writing & Content", jobs: ["Book Editing Jobs", "Content Writing Jobs", "Copywriting Jobs", "Email Copywriting Jobs", "Ghostwriting Jobs"] },
+  ];
+
   const fadeInUp = {
     initial: { opacity: 0, y: 20 },
     animate: { opacity: 1, y: 0 },
@@ -25,9 +50,8 @@ const LandingPage: React.FC = () => {
       <Header />
 
       <main>
-        {/* Hero Section */}
+        {/* --- HERO SECTION (Previous) --- */}
         <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 overflow-hidden">
-          {/* Animated Background Elements */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[600px] pointer-events-none overflow-hidden">
             <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/20 blur-[120px] rounded-full animate-pulse" />
             <div className="absolute bottom-[10%] right-[-5%] w-[30%] h-[30%] bg-indigo-500/10 blur-[100px] rounded-full animate-pulse delay-700" />
@@ -76,7 +100,6 @@ const LandingPage: React.FC = () => {
               </motion.div>
             </div>
 
-            {/* Dashboard Preview / Visual element */}
             <motion.div
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
@@ -95,7 +118,67 @@ const LandingPage: React.FC = () => {
           </div>
         </section>
 
-        {/* Dynamic Benefits / Stats */}
+        {/* --- EXPLORE SECTION (Current) --- */}
+        <section className="py-24 relative">
+          <div className="container mx-auto px-6">
+            <div className="flex flex-col items-center mb-16">
+              <h2 className="text-3xl md:text-5xl font-bold mb-6">Explore our ecosystem</h2>
+              <div className="flex bg-surface p-1 rounded-2xl border border-white/5">
+                <button
+                  onClick={() => setActiveTab('client')}
+                  className={`px-8 py-3 rounded-xl font-bold transition-all ${activeTab === 'client' ? 'bg-primary text-white shadow-lg' : 'text-text-secondary hover:text-white'}`}
+                >
+                  I want to Hire
+                </button>
+                <button
+                  onClick={() => setActiveTab('expert')}
+                  className={`px-8 py-3 rounded-xl font-bold transition-all ${activeTab === 'expert' ? 'bg-primary text-white shadow-lg' : 'text-text-secondary hover:text-white'}`}
+                >
+                  I want Work
+                </button>
+              </div>
+            </div>
+
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+              >
+                {(activeTab === 'client' ? clientServices : expertJobs).map((cat, i) => (
+                  <div key={i} className="glass-card p-6 border-white/5 hover:border-primary/30 transition-all group">
+                    <h3 className="text-lg font-bold mb-4 text-primary flex items-center justify-between">
+                      {cat.category}
+                      <ArrowRight size={16} className="opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                    </h3>
+                    <ul className="space-y-2">
+                      {(activeTab === 'client' ? (cat as any).services : (cat as any).jobs).map((item: string, j: number) => (
+                        <li key={j} className="text-sm text-text-secondary hover:text-white transition-colors cursor-pointer flex items-center gap-2">
+                          <div className="size-1 rounded-full bg-primary/40" />
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+
+                <div className="glass-card p-6 border-primary/20 bg-primary/5 flex flex-col justify-center items-center text-center group cursor-pointer" onClick={() => navigate('/about')}>
+                  <div className="size-12 rounded-full bg-primary flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <Search className="text-white" size={24} />
+                  </div>
+                  <h3 className="text-xl font-bold mb-2">Explore more</h3>
+                  <span className="text-primary font-bold flex items-center gap-2">
+                    Learn how it works <ArrowRight size={16} />
+                  </span>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </section>
+
+        {/* --- BENEFITS / STATS (Previous) --- */}
         <section className="py-24 bg-surface/30">
           <div className="container mx-auto px-6">
             <motion.div
@@ -126,7 +209,7 @@ const LandingPage: React.FC = () => {
           </div>
         </section>
 
-        {/* Detailed Features */}
+        {/* --- DETAILED FEATURES (Previous) --- */}
         <section className="py-32 relative overflow-hidden">
           <div className="container mx-auto px-6">
             <div className="flex flex-col md:flex-row items-center gap-20 mb-32">
@@ -164,7 +247,7 @@ const LandingPage: React.FC = () => {
           </div>
         </section>
 
-        {/* Pricing/CTA */}
+        {/* --- PRICING/CTA (Previous) --- */}
         <section className="py-32 relative">
           <div className="container mx-auto px-6 text-center">
             <div className="glass-card max-w-4xl mx-auto p-12 md:p-20 relative overflow-hidden">
