@@ -1,8 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit2, Save } from 'lucide-react';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
+import { motion } from 'framer-motion';
+import {
+    ArrowLeft,
+    Edit3,
+    Save,
+    User,
+    Mail,
+    Code,
+    Star,
+    Calendar,
+    CheckCircle2,
+    Sparkles,
+    Info
+} from 'lucide-react';
+import Sidebar from '../components/Sidebar';
 
 interface ExpertProfile {
     _id: string;
@@ -12,6 +24,7 @@ interface ExpertProfile {
     rating: number;
     totalProjects: number;
     bio: string;
+    role: string;
 }
 
 const ProfilePage: React.FC = () => {
@@ -29,6 +42,7 @@ const ProfilePage: React.FC = () => {
 
     const backendUrl = import.meta.env.VITE_BACKEND_URL;
     const token = localStorage.getItem('token');
+    const userRole = JSON.parse(localStorage.getItem('user') || '{}').role || 'expert';
 
     useEffect(() => {
         fetchProfile();
@@ -36,19 +50,24 @@ const ProfilePage: React.FC = () => {
 
     const fetchProfile = async () => {
         try {
-            const response = await fetch(`${backendUrl}/api/expert/profile`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
+            const endpoint = userRole === 'client' ? '/api/auth/me' : '/api/expert/profile';
+            const response = await fetch(`${backendUrl}${endpoint}`, {
+                headers: { 'Authorization': `Bearer ${token}` },
             });
 
             if (!response.ok) throw new Error('Failed to fetch profile');
             const data = await response.json();
-            setProfile(data.expert);
+
+            const expertData = data.expert || data;
+            setProfile({
+                ...expertData,
+                role: userRole
+            });
+
             setFormData({
-                name: data.expert.name,
-                bio: data.expert.bio || '',
-                skills: data.expert.skills.join(', '),
+                name: expertData.name,
+                bio: expertData.bio || '',
+                skills: expertData.skills ? expertData.skills.join(', ') : '',
             });
             setLoading(false);
         } catch (err: any) {
@@ -60,9 +79,7 @@ const ProfilePage: React.FC = () => {
     const handleSave = async () => {
         setSaving(true);
         try {
-            // TODO: Implement profile update API
             const skillsArray = formData.skills.split(',').map(s => s.trim()).filter(s => s);
-
             const response = await fetch(`${backendUrl}/api/profile/update`, {
                 method: 'PUT',
                 headers: {
@@ -92,179 +109,203 @@ const ProfilePage: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 flex flex-col">
-                <Header />
-                <main className="flex-1 flex items-center justify-center">
-                    <div className="text-2xl text-gray-600">Loading...</div>
+            <div className="flex bg-background min-h-screen">
+                <Sidebar role={userRole as any} />
+                <main className="flex-1 ml-64 flex items-center justify-center">
+                    <div className="flex flex-col items-center gap-4">
+                        <div className="size-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+                    </div>
                 </main>
-                <Footer />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col">
-            <Header />
+        <div className="flex bg-background min-h-screen text-text-primary">
+            <Sidebar role={userRole as any} />
 
-            <main className="flex-1 px-10 py-16">
+            <main
+                className="flex-1 p-10 pb-20 transition-all duration-300"
+                style={{ marginLeft: 'var(--sidebar-width, 256px)' }}
+            >
                 <div className="max-w-4xl mx-auto">
-                    {/* Back Button */}
-                    <button
-                        onClick={() => navigate('/expert-dashboard')}
-                        className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 transition-colors"
-                    >
-                        <ArrowLeft size={20} />
-                        <span className="font-medium">Back to Dashboard</span>
-                    </button>
-
                     {/* Header */}
-                    <div className="flex justify-between items-center mb-8">
+                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
                         <div>
-                            <h1 className="text-4xl font-extrabold text-gray-900">Profile</h1>
-                            <p className="text-gray-600 text-lg mt-1">Manage your expert profile information</p>
+                            <motion.div
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                className="flex items-center gap-2 text-text-secondary mb-4 hover:text-white transition-colors cursor-pointer w-fit"
+                                onClick={() => navigate(userRole === 'client' ? '/client-dashboard' : '/expert-dashboard')}
+                            >
+                                <ArrowLeft size={16} />
+                                <span className="text-sm font-medium">Back to Workspace</span>
+                            </motion.div>
+                            <h1 className="text-4xl font-bold">Profile Settings</h1>
+                            <p className="text-text-secondary mt-1">Customize how you appear to the world.</p>
                         </div>
+
                         {!editing ? (
                             <button
                                 onClick={() => setEditing(true)}
-                                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-br from-[#87CEEB] to-[#AFEEEE] text-white font-bold rounded-xl shadow-md hover:from-[#AFEEEE] hover:to-[#87CEEB] transition-all duration-300"
+                                className="btn-primary py-3 px-8 text-sm flex items-center gap-2"
                             >
-                                <Edit2 size={20} />
-                                Edit Profile
+                                <Edit3 size={18} />
+                                Edit My Profile
                             </button>
                         ) : (
                             <div className="flex gap-3">
                                 <button
-                                    onClick={() => {
-                                        setEditing(false);
-                                        setFormData({
-                                            name: profile?.name || '',
-                                            bio: profile?.bio || '',
-                                            skills: profile?.skills.join(', ') || '',
-                                        });
-                                    }}
-                                    className="px-6 py-3 bg-gray-300 text-gray-700 font-bold rounded-xl shadow-md hover:bg-gray-400 transition-all duration-300"
+                                    onClick={() => { setEditing(false); fetchProfile(); }}
+                                    className="btn-secondary py-3 px-6 text-sm"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleSave}
                                     disabled={saving}
-                                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-br from-green-500 to-green-600 text-white font-bold rounded-xl shadow-md hover:from-green-600 hover:to-green-700 transition-all duration-300 disabled:opacity-50"
+                                    className="btn-primary py-3 px-8 text-sm flex items-center gap-2"
                                 >
-                                    <Save size={20} />
-                                    {saving ? 'Saving...' : 'Save Changes'}
+                                    {saving ? <div className="size-5 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : <Save size={18} />}
+                                    Save Changes
                                 </button>
                             </div>
                         )}
                     </div>
 
-                    {/* Profile Content */}
-                    <div className="bg-white rounded-2xl shadow-lg p-8 space-y-6">
-                        {/* Profile Picture */}
-                        <div className="flex items-center gap-6 pb-6 border-b border-gray-200">
-                            <div className="w-24 h-24 bg-gradient-to-br from-[#87CEEB] to-[#AFEEEE] rounded-full flex items-center justify-center text-white font-bold text-4xl">
-                                {profile?.name.charAt(0)}
+                    <div className="grid grid-cols-1 gap-8">
+                        {/* Profile Info Card */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="glass-card p-10 relative overflow-hidden"
+                        >
+                            <div className="absolute top-0 right-0 p-10 opacity-5 pointer-events-none">
+                                <User size={160} />
                             </div>
-                            <div>
-                                <h2 className="text-2xl font-bold text-gray-900">{profile?.name}</h2>
-                                <p className="text-gray-600">{profile?.email}</p>
-                                <div className="flex items-center gap-2 mt-2">
-                                    <span className="text-yellow-500">⭐</span>
-                                    <span className="font-semibold">{profile?.rating.toFixed(1)}</span>
-                                    <span className="text-gray-500">• {profile?.totalProjects} projects completed</span>
+
+                            <div className="flex flex-col md:flex-row items-center md:items-start gap-10 relative z-10">
+                                <div className="relative group">
+                                    <div className="size-32 md:size-40 bg-gradient-to-br from-primary to-indigo-600 rounded-3xl flex items-center justify-center text-white font-bold text-5xl shadow-2xl shadow-primary/20 transition-transform group-hover:scale-[1.02]">
+                                        {profile?.name.charAt(0)}
+                                    </div>
+                                    <div className="absolute -bottom-2 -right-2 size-10 bg-surface border border-border rounded-xl flex items-center justify-center text-primary shadow-lg scale-0 group-hover:scale-100 transition-transform">
+                                        <Sparkles size={18} />
+                                    </div>
+                                </div>
+
+                                <div className="flex-1 text-center md:text-left space-y-6 w-full">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full text-left">
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-bold text-text-secondary uppercase tracking-widest px-1">Full Name</label>
+                                            {editing ? (
+                                                <input
+                                                    type="text"
+                                                    value={formData.name}
+                                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                                    className="w-full bg-surface border border-border rounded-xl py-3 px-4 outline-none focus:border-primary/50 transition-all text-white"
+                                                />
+                                            ) : (
+                                                <p className="text-xl font-bold px-1">{profile?.name}</p>
+                                            )}
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-bold text-text-secondary uppercase tracking-widest px-1">Email Address</label>
+                                            <div className="flex items-center gap-2 px-1 text-text-secondary">
+                                                <Mail size={16} />
+                                                <p className="text-lg">{profile?.email}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Stats for Expert */}
+                                    {profile?.role === 'expert' && (
+                                        <div className="flex flex-wrap justify-center md:justify-start gap-4 pt-4">
+                                            <div className="px-4 py-2 bg-white/5 rounded-xl border border-white/5 flex items-center gap-2">
+                                                <Star className="text-yellow-400" size={16} />
+                                                <span className="font-bold">{profile?.rating.toFixed(1)}</span>
+                                            </div>
+                                            <div className="px-4 py-2 bg-white/5 rounded-xl border border-white/5 flex items-center gap-2">
+                                                <CheckCircle2 className="text-green-400" size={16} />
+                                                <span className="font-bold">{profile?.totalProjects} Projects</span>
+                                            </div>
+                                            <div className="px-4 py-2 bg-white/5 rounded-xl border border-white/5 flex items-center gap-2">
+                                                <Calendar className="text-primary" size={16} />
+                                                <span className="font-bold">Joined 2024</span>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
-                        </div>
+                        </motion.div>
 
-                        {/* Name */}
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Full Name</label>
-                            {editing ? (
-                                <input
-                                    type="text"
-                                    value={formData.name}
-                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#87CEEB] focus:border-transparent outline-none"
-                                />
-                            ) : (
-                                <p className="text-gray-900 text-lg">{profile?.name}</p>
-                            )}
-                        </div>
-
-                        {/* Email (read-only) */}
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Email Address</label>
-                            <p className="text-gray-600">{profile?.email}</p>
-                            <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
-                        </div>
-
-                        {/* Bio */}
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Bio</label>
-                            {editing ? (
-                                <textarea
-                                    value={formData.bio}
-                                    onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                                    rows={4}
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#87CEEB] focus:border-transparent outline-none resize-none"
-                                    placeholder="Tell clients about yourself..."
-                                />
-                            ) : (
-                                <p className="text-gray-900">{profile?.bio || 'No bio added yet'}</p>
-                            )}
-                        </div>
-
-                        {/* Skills */}
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Skills</label>
-                            {editing ? (
-                                <div>
-                                    <input
-                                        type="text"
-                                        value={formData.skills}
-                                        onChange={(e) => setFormData({ ...formData, skills: e.target.value })}
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#87CEEB] focus:border-transparent outline-none"
-                                        placeholder="e.g., React, Node.js, MongoDB (comma separated)"
+                        {/* Bio & Skills */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.1 }}
+                            className="grid grid-cols-1 md:grid-cols-2 gap-8"
+                        >
+                            <div className="glass-card p-8 flex flex-col h-full">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                                        <Info size={18} />
+                                    </div>
+                                    <h3 className="text-lg font-bold">Biography</h3>
+                                </div>
+                                {editing ? (
+                                    <textarea
+                                        value={formData.bio}
+                                        onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                                        rows={6}
+                                        className="w-full bg-surface border border-border rounded-2xl p-4 outline-none focus:border-primary/50 transition-all text-white placeholder:text-text-secondary resize-none text-sm h-full"
+                                        placeholder="Tell us about yourself..."
                                     />
-                                    <p className="text-xs text-gray-500 mt-1">Separate skills with commas</p>
-                                </div>
-                            ) : (
-                                <div className="flex flex-wrap gap-2">
-                                    {profile?.skills.map((skill, index) => (
-                                        <span
-                                            key={index}
-                                            className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold"
-                                        >
-                                            {skill}
-                                        </span>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Stats */}
-                        <div className="pt-6 border-t border-gray-200">
-                            <h3 className="text-lg font-bold text-gray-900 mb-4">Statistics</h3>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                <div className="bg-gray-50 rounded-xl p-4">
-                                    <div className="text-sm text-gray-600">Rating</div>
-                                    <div className="text-2xl font-bold text-gray-900">{profile?.rating.toFixed(1)} ⭐</div>
-                                </div>
-                                <div className="bg-gray-50 rounded-xl p-4">
-                                    <div className="text-sm text-gray-600">Total Projects</div>
-                                    <div className="text-2xl font-bold text-gray-900">{profile?.totalProjects}</div>
-                                </div>
-                                <div className="bg-gray-50 rounded-xl p-4 col-span-2 md:col-span-1">
-                                    <div className="text-sm text-gray-600">Member Since</div>
-                                    <div className="text-lg font-bold text-gray-900">2024</div>
-                                </div>
+                                ) : (
+                                    <p className="text-text-secondary text-sm leading-relaxed whitespace-pre-line">
+                                        {profile?.bio || 'Add a bio to let others know about your professional background and passions.'}
+                                    </p>
+                                )}
                             </div>
-                        </div>
+
+                            <div className="glass-card p-8 h-full flex flex-col">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400">
+                                        <Code size={18} />
+                                    </div>
+                                    <h3 className="text-lg font-bold">Core Skills</h3>
+                                </div>
+                                {editing ? (
+                                    <div className="flex flex-col h-full">
+                                        <input
+                                            type="text"
+                                            value={formData.skills}
+                                            onChange={(e) => setFormData({ ...formData, skills: e.target.value })}
+                                            className="w-full bg-surface border border-border rounded-xl py-3 px-4 outline-none focus:border-primary/50 transition-all text-white text-sm"
+                                            placeholder="React, Node.js, Python..."
+                                        />
+                                        <p className="text-[10px] text-text-secondary mt-2 italic px-1">Separate skills with commas</p>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-wrap gap-2 content-start">
+                                        {profile?.skills && profile.skills.length > 0 ? profile.skills.map((skill, index) => (
+                                            <span
+                                                key={index}
+                                                className="px-4 py-2 bg-white/5 border border-white/5 hover:border-primary/30 rounded-xl text-xs font-bold text-text-secondary hover:text-white transition-all cursor-default"
+                                            >
+                                                {skill}
+                                            </span>
+                                        )) : (
+                                            <p className="text-text-secondary text-sm italic">No skills listed yet.</p>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        </motion.div>
                     </div>
                 </div>
             </main>
-
-            <Footer />
         </div>
     );
 };
