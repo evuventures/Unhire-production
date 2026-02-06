@@ -57,6 +57,19 @@ const projectSchema = new mongoose.Schema({
     type: Date,
     default: null,
   },
+  draftStatus: {
+    type: String,
+    enum: ["pending_review", "accepted", "rejected", null],
+    default: null,
+  },
+  attemptsCount: {
+    type: Number,
+    default: 0,
+  },
+  rejectedExperts: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+  }],
 
   status: {
     type: String,
