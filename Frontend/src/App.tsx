@@ -12,6 +12,7 @@ import PostProjectPage from './pages/PostProjectPage';
 import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
 import PaymentsPage from './pages/PaymentsPage';
+import ClientProjectDetailsPage from './pages/ClientProjectDetailsPage';
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/payments" element={<PaymentsPage />} />
+          <Route path="/client/project/:id" element={<ClientProjectDetailsPage />} />
         </Routes>
       </div>
     </Router>

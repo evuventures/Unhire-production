@@ -1,6 +1,10 @@
 import { Project } from "../models/project.model.js";
 import User from "../models/user.model.js";
 import { createNotification } from "./notification.service.js";
+import {
+    sendProjectAssignmentEmail,
+    sendDraftSubmissionEmail
+} from "./email.service.js";
 
 /**
  * Get available projects for experts to claim
@@ -61,6 +65,12 @@ export const claimProjectService = async (projectId, expertId) => {
         project._id
     );
 
+    // Send email
+    // Expert details are already in 'project.assignedExpert' due to populate
+    if (project.assignedExpert) {
+        await sendProjectAssignmentEmail(project.assignedExpert, project);
+    }
+
     return project;
 };
 
@@ -112,6 +122,9 @@ export const submitDraftService = async (projectId, expertId, draftData) => {
             `Expert has submitted a draft for your project "${project.title}". Please review.`,
             project._id
         );
+        // Send email
+        // We need client details. 'project.clientId' is populated.
+        await sendDraftSubmissionEmail(project.clientId, project);
     }
 
     return project;

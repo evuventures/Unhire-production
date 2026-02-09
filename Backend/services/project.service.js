@@ -2,6 +2,10 @@ import { Project } from "../models/project.model.js";
 import User from "../models/user.model.js";
 import { getExpertRecommendations } from "../utils/LLMengine.js";
 import { createNotification } from "./notification.service.js";
+import {
+  sendProjectExpirationEmail,
+  sendProjectAssignmentEmail
+} from "./email.service.js";
 
 const MAX_ATTEMPTS = 3;
 const SUBMISSION_TIMEOUT_MS = 3 * 60 * 60 * 1000; // 3 hours
@@ -44,7 +48,7 @@ export const markExpiredProjectsService = async () => {
     const timedOutExpertId = project.assignedExpert;
 
     // Add timed-out expert to rejected list
-    if (timedOutExpertId && !project.rejectedExperts.includes(timedOutExpertId)) {
+    if (timedOutExpertId && !project.rejectedExperts.some(id => id.toString() === timedOutExpertId.toString())) {
       project.rejectedExperts.push(timedOutExpertId);
     }
 
@@ -76,6 +80,12 @@ export const markExpiredProjectsService = async () => {
         `Project "${project.title}" has expired after ${MAX_ATTEMPTS} failed attempts.`,
         project._id
       );
+
+      // Send email
+      const client = await User.findById(project.clientId);
+      if (client) {
+        await sendProjectExpirationEmail(client, project);
+      }
 
       console.log(`[CRON] Project ${project._id} expired after ${MAX_ATTEMPTS} timeout attempts.`);
       expiredCount++;
@@ -131,6 +141,9 @@ const autoReassignTimedOutProject = async (project) => {
     `You have been assigned to project "${project.title}". You have 3 hours to submit your draft.`,
     project._id
   );
+
+  // Send email
+  await sendProjectAssignmentEmail(newExpert, project);
 
   console.log(`[CRON] Project ${project._id} reassigned to expert ${newExpert._id}`);
   return true;

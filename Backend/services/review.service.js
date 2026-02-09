@@ -2,6 +2,12 @@
 import { Project } from "../models/project.model.js";
 import User from "../models/user.model.js";
 import { createNotification } from "./notification.service.js";
+import {
+    sendDraftApprovalEmail,
+    sendDraftRejectionEmail,
+    sendProjectExpirationEmail,
+    sendProjectAssignmentEmail
+} from "./email.service.js";
 
 const MAX_ATTEMPTS = 3;
 
@@ -29,14 +35,14 @@ export const approveDraftService = async (projectId, clientId) => {
     await project.save();
 
     // Notify the expert
-    if (project.assignedExpert) {
-        await createNotification(
-            project.assignedExpert,
-            "draft_approved",
-            `Your draft for "${project.title}" has been approved! The project is now complete.`,
-            project._id
-        );
-    }
+    await createNotification(
+        project.assignedExpert,
+        "draft_approved",
+        `Your draft for "${project.title}" has been approved! The project is now complete.`,
+        project._id
+    );
+    // Send email
+    await sendDraftApprovalEmail(project.assignedExpert, project);
 
     await project.populate("clientId assignedExpert", "name email role");
     return project;
@@ -64,7 +70,7 @@ export const rejectDraftService = async (projectId, clientId, rejectionReason = 
     const rejectedExpertId = project.assignedExpert;
 
     // Add current expert to rejected list
-    if (rejectedExpertId && !project.rejectedExperts.includes(rejectedExpertId)) {
+    if (rejectedExpertId && !project.rejectedExperts.some(id => id.toString() === rejectedExpertId.toString())) {
         project.rejectedExperts.push(rejectedExpertId);
     }
 
@@ -81,6 +87,13 @@ export const rejectDraftService = async (projectId, clientId, rejectionReason = 
             `Your draft for "${project.title}" was not approved.${reasonText}`,
             project._id
         );
+        // Send email (we need the expert object, so we might need to populate or fetch it if not fully populated)
+        // Note: assignedExpert is likely just an ID here from the initial query unless populated.
+        // Let's ensure we have the expert details.
+        const expert = await User.findById(rejectedExpertId);
+        if (expert) {
+            await sendDraftRejectionEmail(expert, project, rejectionReason);
+        }
     }
 
     // Check if max attempts reached
@@ -99,6 +112,10 @@ export const rejectDraftService = async (projectId, clientId, rejectionReason = 
             `Project "${project.title}" has expired after ${MAX_ATTEMPTS} failed attempts.`,
             project._id
         );
+        const client = await User.findById(clientId);
+        if (client) {
+            await sendProjectExpirationEmail(client, project);
+        }
 
         await project.populate("clientId", "name email role");
         return { project, reassigned: false, expired: true };
@@ -161,6 +178,9 @@ const autoReassignProject = async (project) => {
         `You have been assigned to project "${project.title}". You have 3 hours to submit your draft.`,
         project._id
     );
+
+    // Send email to new expert
+    await sendProjectAssignmentEmail(newExpert, project);
 
     return {
         reassigned: true,

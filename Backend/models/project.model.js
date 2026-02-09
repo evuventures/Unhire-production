@@ -83,4 +83,9 @@ const projectSchema = new mongoose.Schema({
   },
 });
 
+// Indexes for performance optimization
+projectSchema.index({ assignedExpert: 1, status: 1 }); // For fetching expert's projects
+projectSchema.index({ status: 1, assignedAt: 1, draftSubmitted: 1 }); // For timeout monitor
+projectSchema.index({ clientId: 1, status: 1 }); // For fetching client's projects
+
 export const Project = mongoose.model("Project", projectSchema);

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
@@ -11,6 +11,24 @@ const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const userStr = localStorage.getItem("user");
+
+    if (token && userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        if (user.role === "client") navigate("/client-dashboard");
+        else if (user.role === "expert") navigate("/expert-dashboard");
+        else navigate("/");
+      } catch (e) {
+        // Invalid user data, let them login
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+      }
+    }
+  }, [navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
