@@ -5,6 +5,20 @@ import {
   getProjectStatusService,
   recommendExpertsForProjectService
 } from "../services/project.service.js";
+  recommendExpertsForProjectService,
+  reviewProjectService
+} from "../services/project.service.js";
+
+export const reviewProject = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { decision, feedback } = req.body;
+    const project = await reviewProjectService(id, req.user.id, decision, feedback);
+    res.status(200).json({ message: "Project reviewed successfully", project });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};
 
 export const createProject = async (req, res) => {
   try {
@@ -78,6 +92,7 @@ export const createProject = async (req, res) => {
     const recommendedExperts = await recommendExpertsForProjectService(project);
 
     // Gemini recommendation completed (logging removed for production cleanliness)
+    console.log("Recommended experts by Gemini:", recommendedExperts);
 
     res.status(201).json({
       message: "Project created successfully",

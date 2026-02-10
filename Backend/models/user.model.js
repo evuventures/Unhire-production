@@ -11,6 +11,7 @@ const userSchema = new mongoose.Schema({
   skills: {
     type: [String],
     default: [], // e.g. ["Node.js", "React", "MongoDB"]
+    required: true, // e.g. ["Node.js", "React", "MongoDB"]
   },
   rating: {
     type: Number,
@@ -23,6 +24,14 @@ const userSchema = new mongoose.Schema({
   bio: {
     type: String,
     default: "",
+  },
+  linkedin: {
+    type: String,
+    default: ""
+  },
+  resume: {
+    type: String, // Store file path
+    default: ""
   },
 },
   { timestamps: true }

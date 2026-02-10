@@ -7,6 +7,7 @@ import LoginPage from "./pages/LoginPage";
 import AboutPage from "./pages/AboutPage";
 import PricingPage from "./pages/PricingPage";
 import ClientDashboard from './pages/ClientDashboard';
+import ClientProjectDetailPage from './pages/ClientProjectDetailPage';
 import ExpertDashboard from './pages/ExpertDashboard';
 import PostProjectPage from './pages/PostProjectPage';
 import ProfilePage from './pages/ProfilePage';
@@ -23,6 +24,7 @@ function App() {
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/client-dashboard" element={<ClientDashboard />} />
+          <Route path="/client/project/:id" element={<ClientProjectDetailPage />} />
           <Route path="/expert-dashboard" element={<ExpertDashboard />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/pricing" element={<PricingPage />} />
