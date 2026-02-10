@@ -11,6 +11,7 @@ import expertRoutes from "./routes/expert.routes.js";
 import utilsRoutes from "./routes/utils.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
 import { startProjectMonitor } from "./cron/projectMonitor.js";
+import { verifyTransporter } from "./services/email.service.js";
 
 
 dotenv.config();
@@ -33,9 +34,10 @@ app.use(express.json());
 
 // MongoDB
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => {
+  .then(async () => {
     console.log("✅ MongoDB connected");
     startProjectMonitor();
+    await verifyTransporter();
   })
   .catch(err => console.error("❌ MongoDB connection error:", err));
 

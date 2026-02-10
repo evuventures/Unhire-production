@@ -10,6 +10,7 @@ const userSchema = new mongoose.Schema({
   // --- NEW FIELDS FOR EXPERTS ---
   skills: {
     type: [String],
+    default: [], // e.g. ["Node.js", "React", "MongoDB"]
     required: true, // e.g. ["Node.js", "React", "MongoDB"]
   },
   rating: {

@@ -3,39 +3,98 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Create transporter
-const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: process.env.SMTP_PORT || 587,
-    secure: false, // true for 465, false for other ports
-    auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-    },
-});
+const MAX_RETRIES = 3;
+const BASE_DELAY_MS = 1000; // 1s, 2s, 4s exponential backoff
 
 /**
- * Send an email
+ * Lazy transporter — only created when SMTP credentials exist.
+ * Avoids crashes when env vars are missing.
+ */
+let _transporter = null;
+const getTransporter = () => {
+    if (_transporter) return _transporter;
+
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+        return null;
+    }
+
+    _transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST || 'smtp.gmail.com',
+        port: parseInt(process.env.SMTP_PORT, 10) || 587,
+        secure: process.env.SMTP_PORT === '465',
+        auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS,
+        },
+        connectionTimeout: 10000, // 10s connection timeout
+        socketTimeout: 15000,     // 15s socket timeout
+        greedyConnection: false,
+    });
+
+    return _transporter;
+};
+
+/**
+ * Verify transporter connectivity on startup.
+ * Call after server boots to confirm SMTP is reachable.
+ */
+export const verifyTransporter = async () => {
+    const transporter = getTransporter();
+    if (!transporter) {
+        console.log('[EMAIL] SMTP not configured — emails will be mocked to console.');
+        return false;
+    }
+    try {
+        await transporter.verify();
+        console.log('[EMAIL] SMTP transporter verified ✅');
+        return true;
+    } catch (err) {
+        console.error('[EMAIL] SMTP verification failed:', err.message);
+        return false;
+    }
+};
+
+/**
+ * Helper: sleep for retry backoff
+ */
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Send an email with retry logic and exponential backoff.
+ * Never throws — logs errors gracefully.
  * @param {String} to - Recipient email
  * @param {String} subject - Email subject
  * @param {String} html - Email body (HTML)
  */
 export const sendEmail = async (to, subject, html) => {
-    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    const transporter = getTransporter();
+
+    if (!transporter) {
         console.log(`[EMAIL MOCK] To: ${to} | Subject: ${subject}`);
         return;
     }
 
-    try {
-        await transporter.sendMail({
-            from: `"Unhire" <${process.env.SMTP_USER}>`,
-            to,
-            subject,
-            html,
-        });
-        console.log(`[EMAIL SENT] To: ${to} | Subject: ${subject}`);
-    } catch (error) {
-        console.error("[EMAIL ERROR]", error);
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        try {
+            await transporter.sendMail({
+                from: `"Unhire" <${process.env.SMTP_USER}>`,
+                to,
+                subject,
+                html,
+            });
+            console.log(`[EMAIL SENT] To: ${to} | Subject: ${subject}`);
+            return; // Success — exit
+        } catch (error) {
+            console.error(`[EMAIL ERROR] Attempt ${attempt}/${MAX_RETRIES} for ${to}:`, error.message);
+
+            if (attempt < MAX_RETRIES) {
+                const delay = BASE_DELAY_MS * Math.pow(2, attempt - 1);
+                console.log(`[EMAIL RETRY] Retrying in ${delay}ms...`);
+                await sleep(delay);
+            } else {
+                console.error(`[EMAIL FAILED] All ${MAX_RETRIES} attempts failed for ${to} | Subject: ${subject}`);
+            }
+        }
     }
 };
 
