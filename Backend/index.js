@@ -9,6 +9,7 @@ import adminRoutes from './routes/admin.routes.js';
 import projectRoutes from "./routes/project.routes.js";
 import expertRoutes from "./routes/expert.routes.js";
 import utilsRoutes from "./routes/utils.routes.js";
+import notificationRoutes from "./routes/notification.routes.js";
 import { startProjectMonitor } from "./cron/projectMonitor.js";
 
 
@@ -16,10 +17,11 @@ dotenv.config();
 const app = express();
 
 // ---------- CORS ----------
-const allowedOrigins = [
-  "http://localhost:5173", // React dev server
-  "https://your-frontend-domain.vercel.app" // production frontend URL
-];
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',')
+  : [
+    "http://localhost:5173", // React dev server default
+  ];
 
 app.use(cors({
   origin: allowedOrigins,
@@ -45,6 +47,7 @@ app.use("/api/projects", projectRoutes);
 app.use("/api/expert", expertRoutes);
 app.use('/api/utils', utilsRoutes);
 app.use('/uploads', express.static('uploads'));
+app.use("/api/notifications", notificationRoutes);
 
 
 

@@ -13,11 +13,12 @@ import PostProjectPage from './pages/PostProjectPage';
 import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
 import PaymentsPage from './pages/PaymentsPage';
+import ClientProjectDetailsPage from './pages/ClientProjectDetailsPage';
 
 function App() {
   return (
     <Router>
-      <div className="min-h-screen bg-gray-50" style={{ fontFamily: 'Manrope, "Noto Sans", sans-serif' }}>
+      <div className="min-h-screen">
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/signup" element={<SignupPage />} />
@@ -31,6 +32,7 @@ function App() {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/payments" element={<PaymentsPage />} />
+          <Route path="/client/project/:id" element={<ClientProjectDetailsPage />} />
         </Routes>
       </div>
     </Router>
