@@ -81,10 +81,12 @@ export const markExpiredProjectsService = async () => {
         project._id
       );
 
-      // Send email
+      // Send email (non-blocking)
       const client = await User.findById(project.clientId);
       if (client) {
-        await sendProjectExpirationEmail(client, project);
+        sendProjectExpirationEmail(client, project).catch(err =>
+          console.error("[EMAIL] Failed to send expiration email:", err.message)
+        );
       }
 
       console.log(`[CRON] Project ${project._id} expired after ${MAX_ATTEMPTS} timeout attempts.`);
@@ -142,8 +144,10 @@ const autoReassignTimedOutProject = async (project) => {
     project._id
   );
 
-  // Send email
-  await sendProjectAssignmentEmail(newExpert, project);
+  // Send email (non-blocking)
+  sendProjectAssignmentEmail(newExpert, project).catch(err =>
+    console.error("[EMAIL] Failed to send assignment email:", err.message)
+  );
 
   console.log(`[CRON] Project ${project._id} reassigned to expert ${newExpert._id}`);
   return true;
@@ -156,18 +160,22 @@ export const getProjectStatusService = async (projectId) => {
 
   if (!project) throw new Error("Project not found");
 
-  // Calculate remaining time
-  const projectCreated = project.createdAt.getTime();
-  const expiryTime = projectCreated + 3 * 60 * 60 * 1000; // 3 hours
-  const now = Date.now();
-  let remainingMs = expiryTime - now;
-  if (remainingMs < 0) remainingMs = 0;
+  // Calculate remaining time from assignedAt (not createdAt)
+  let remaining = { hours: 0, minutes: 0, seconds: 0 };
 
-  const remaining = {
-    hours: Math.floor(remainingMs / (1000 * 60 * 60)),
-    minutes: Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60)),
-    seconds: Math.floor((remainingMs % (1000 * 60)) / 1000),
-  };
+  if (project.assignedAt && ["in_progress"].includes(project.status)) {
+    const assignedTime = new Date(project.assignedAt).getTime();
+    const expiryTime = assignedTime + 3 * 60 * 60 * 1000; // 3 hours from assignment
+    const now = Date.now();
+    let remainingMs = expiryTime - now;
+    if (remainingMs < 0) remainingMs = 0;
+
+    remaining = {
+      hours: Math.floor(remainingMs / (1000 * 60 * 60)),
+      minutes: Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60)),
+      seconds: Math.floor((remainingMs % (1000 * 60)) / 1000),
+    };
+  }
 
   return {
     id: project._id,

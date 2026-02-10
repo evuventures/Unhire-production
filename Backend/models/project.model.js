@@ -22,7 +22,22 @@ const projectSchema = new mongoose.Schema({
   endDate: Date,
 
   // NEW: deadline (required)
-  deadline: { type: Date, required: true },
+  deadline: {
+    type: Date,
+    required: true,
+    validate: {
+      validator: function (value) {
+        // Only validate on new documents, not updates
+        if (this.isNew) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          return value >= today;
+        }
+        return true;
+      },
+      message: "Deadline cannot be set before today's date.",
+    },
+  },
 
   experienceLevel: {
     type: String,

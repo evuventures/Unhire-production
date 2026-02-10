@@ -1,8 +1,10 @@
-import {  createProjectService,
-          getAllProjectsService,
-          getProjectsByClientIdService,
-          getProjectStatusService,
-          recommendExpertsForProjectService } from "../services/project.service.js";
+import {
+  createProjectService,
+  getAllProjectsService,
+  getProjectsByClientIdService,
+  getProjectStatusService,
+  recommendExpertsForProjectService
+} from "../services/project.service.js";
 
 export const createProject = async (req, res) => {
   try {
@@ -21,7 +23,7 @@ export const createProject = async (req, res) => {
       paymentTerms,
       startDate,
       endDate,
-      deadline, 
+      deadline,
       experienceLevel,
       locationPreference,
       language,
@@ -39,13 +41,22 @@ export const createProject = async (req, res) => {
       return res.status(400).json({ message: "Invalid deadline date format" });
     }
 
+    // Enforce: deadline cannot be in the past
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (parsedDeadline < today) {
+      return res.status(400).json({
+        message: "Deadline cannot be in the past. Please select today or a future date.",
+      });
+    }
+
     const projectData = {
       clientId: req.user.id,
-      title,
-      category,
-      description,
-      requirements,
-      deliverables,
+      title: typeof title === "string" ? title.trim() : title,
+      category: typeof category === "string" ? category.trim() : category,
+      description: typeof description === "string" ? description.trim() : description,
+      requirements: typeof requirements === "string" ? requirements.trim() : requirements,
+      deliverables: typeof deliverables === "string" ? deliverables.trim() : deliverables,
       budgetType,
       budgetAmount,
       paymentTerms,
@@ -60,14 +71,14 @@ export const createProject = async (req, res) => {
     };
 
 
-      // 1️⃣ Create the project
+    // 1️⃣ Create the project
     const project = await createProjectService(projectData);
 
     // 2️⃣ Immediately trigger Gemini expert recommendation
     const recommendedExperts = await recommendExpertsForProjectService(project);
 
-    console.log("Recommended experts by Gemini:", recommendedExperts);
-    
+    // Gemini recommendation completed (logging removed for production cleanliness)
+
     res.status(201).json({
       message: "Project created successfully",
       project,

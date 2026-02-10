@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
-  PlusCircle,
   ArrowLeft,
   Sparkles,
   Target,
@@ -10,7 +9,6 @@ import {
   Calendar,
   Briefcase,
   Layers,
-  CheckCircle2,
   Info,
   Loader2,
   ChevronRight
@@ -38,7 +36,12 @@ const PostProjectPage: React.FC = () => {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [step, setStep] = useState(1);
+
+  // Compute today's date string for min-date validation
+  const todayStr = useMemo(() => {
+    const d = new Date();
+    return d.toISOString().split('T')[0];
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -48,6 +51,13 @@ const PostProjectPage: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+
+    // Client-side date validation
+    if (formData.deadline && formData.deadline < todayStr) {
+      setError('Deadline cannot be in the past. Please select today or a future date.');
+      setLoading(false);
+      return;
+    }
 
     try {
       const token = localStorage.getItem('token');
@@ -231,6 +241,7 @@ const PostProjectPage: React.FC = () => {
                           name="deadline"
                           value={formData.deadline}
                           onChange={handleInputChange}
+                          min={todayStr}
                           className="w-full bg-surface border border-border rounded-xl py-4 pl-12 pr-4 outline-none focus:border-primary/50 transition-all text-white [color-scheme:dark]"
                           required
                         />

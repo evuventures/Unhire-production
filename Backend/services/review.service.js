@@ -1,4 +1,3 @@
-// services/review.service.js
 import { Project } from "../models/project.model.js";
 import User from "../models/user.model.js";
 import { createNotification } from "./notification.service.js";
@@ -41,8 +40,14 @@ export const approveDraftService = async (projectId, clientId) => {
         `Your draft for "${project.title}" has been approved! The project is now complete.`,
         project._id
     );
-    // Send email
-    await sendDraftApprovalEmail(project.assignedExpert, project);
+
+    // Send email (fetch expert object — assignedExpert is unpopulated ObjectId here)
+    const expert = await User.findById(project.assignedExpert);
+    if (expert) {
+        sendDraftApprovalEmail(expert, project).catch(err =>
+            console.error("[EMAIL] Failed to send approval email:", err.message)
+        );
+    }
 
     await project.populate("clientId assignedExpert", "name email role");
     return project;
@@ -87,12 +92,11 @@ export const rejectDraftService = async (projectId, clientId, rejectionReason = 
             `Your draft for "${project.title}" was not approved.${reasonText}`,
             project._id
         );
-        // Send email (we need the expert object, so we might need to populate or fetch it if not fully populated)
-        // Note: assignedExpert is likely just an ID here from the initial query unless populated.
-        // Let's ensure we have the expert details.
         const expert = await User.findById(rejectedExpertId);
         if (expert) {
-            await sendDraftRejectionEmail(expert, project, rejectionReason);
+            sendDraftRejectionEmail(expert, project, rejectionReason).catch(err =>
+                console.error("[EMAIL] Failed to send rejection email:", err.message)
+            );
         }
     }
 
@@ -114,7 +118,9 @@ export const rejectDraftService = async (projectId, clientId, rejectionReason = 
         );
         const client = await User.findById(clientId);
         if (client) {
-            await sendProjectExpirationEmail(client, project);
+            sendProjectExpirationEmail(client, project).catch(err =>
+                console.error("[EMAIL] Failed to send expiration email:", err.message)
+            );
         }
 
         await project.populate("clientId", "name email role");
@@ -179,8 +185,10 @@ const autoReassignProject = async (project) => {
         project._id
     );
 
-    // Send email to new expert
-    await sendProjectAssignmentEmail(newExpert, project);
+    // Send email to new expert (non-blocking)
+    sendProjectAssignmentEmail(newExpert, project).catch(err =>
+        console.error("[EMAIL] Failed to send assignment email:", err.message)
+    );
 
     return {
         reassigned: true,

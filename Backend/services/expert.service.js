@@ -65,10 +65,11 @@ export const claimProjectService = async (projectId, expertId) => {
         project._id
     );
 
-    // Send email
-    // Expert details are already in 'project.assignedExpert' due to populate
+    // Send email (non-blocking — email failure must not block response)
     if (project.assignedExpert) {
-        await sendProjectAssignmentEmail(project.assignedExpert, project);
+        sendProjectAssignmentEmail(project.assignedExpert, project).catch(err =>
+            console.error("[EMAIL] Failed to send assignment email:", err.message)
+        );
     }
 
     return project;
@@ -122,9 +123,10 @@ export const submitDraftService = async (projectId, expertId, draftData) => {
             `Expert has submitted a draft for your project "${project.title}". Please review.`,
             project._id
         );
-        // Send email
-        // We need client details. 'project.clientId' is populated.
-        await sendDraftSubmissionEmail(project.clientId, project);
+        // Send email (non-blocking)
+        sendDraftSubmissionEmail(project.clientId, project).catch(err =>
+            console.error("[EMAIL] Failed to send draft submission email:", err.message)
+        );
     }
 
     return project;
