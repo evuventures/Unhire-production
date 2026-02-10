@@ -71,6 +71,11 @@ const projectSchema = new mongoose.Schema({
     ref: "User",
   }],
 
+  attemptsCount: {
+    type: Number,
+    default: 0,
+  },
+
   status: {
     type: String,
     enum: ["active", "unassigned", "in_progress", "submitted", "completed", "expired", "timeout"],

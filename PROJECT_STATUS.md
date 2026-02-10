@@ -1,6 +1,6 @@
 # Unhire Platform - Project Status & Next Steps
 
-**Last Updated:** November 26, 2024  
+**Last Updated:** December 09, 2024  
 **Platform:** MERN Stack (MongoDB, Express, React, Node.js) + Node Cron
 
 ---
@@ -373,3 +373,19 @@ npm run dev
 ---
 
 **Status**: MVP is ~70% complete. Core expert workflow is functional. Client review and admin features are the main gaps.
+
+---
+
+## 🔍 Recent Context & Anomalies (Dec 09, 2024)
+
+> [!WARNING]
+> **Codebase State Mismatch Detected**
+> Recent conversation history mentions active development on the following features, but they are **NOT present** in the current `Unhire-production` file system:
+> - **Invoices**: `Invoices.jsx` and invoice status display logic.
+> - **WhatsApp Integration**: `http://localhost:5173/whatsapp/integration` and GreenAPI.
+> - **StartProject Page**: `/StartProject` vs existing `/post-project`.
+> - **Contact Meeting Scheduler**: `ContactPage.tsx` or similar.
+>
+> **Action Taken:**
+> - `PROJECT_STATUS.md` reflects the **actual** state of the file system (e.g., `AdminDashboard.tsx` is missing, `admin.controller.js` is a stub).
+> - Created `task.md` based on the "Recommended Implementation Order" in this file to guide next steps.
