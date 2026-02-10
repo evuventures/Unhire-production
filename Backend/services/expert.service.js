@@ -1,5 +1,10 @@
 import { Project } from "../models/project.model.js";
 import User from "../models/user.model.js";
+import { createNotification } from "./notification.service.js";
+import {
+    sendProjectAssignmentEmail,
+    sendDraftSubmissionEmail
+} from "./email.service.js";
 
 /**
  * Get available projects for experts to claim
@@ -52,6 +57,20 @@ export const claimProjectService = async (projectId, expertId) => {
         throw new Error("Project is already claimed or not available");
     }
 
+    // Notify the expert about the assignment
+    await createNotification(
+        expertId,
+        "project_assigned",
+        `You have claimed project "${project.title}". You have 3 hours to submit your draft.`,
+        project._id
+    );
+
+    // Send email
+    // Expert details are already in 'project.assignedExpert' due to populate
+    if (project.assignedExpert) {
+        await sendProjectAssignmentEmail(project.assignedExpert, project);
+    }
+
     return project;
 };
 
@@ -89,10 +108,24 @@ export const submitDraftService = async (projectId, expertId, draftData) => {
     project.draftUrl = draftData.url || null;
     project.submittedAt = new Date();
     project.draftSubmitted = true;
+    project.draftStatus = "pending_review";
     project.status = "submitted";
 
     await project.save();
     await project.populate("clientId assignedExpert", "name email role");
+
+    // Notify the client about the draft submission
+    if (project.clientId) {
+        await createNotification(
+            project.clientId._id || project.clientId,
+            "draft_submitted",
+            `Expert has submitted a draft for your project "${project.title}". Please review.`,
+            project._id
+        );
+        // Send email
+        // We need client details. 'project.clientId' is populated.
+        await sendDraftSubmissionEmail(project.clientId, project);
+    }
 
     return project;
 };

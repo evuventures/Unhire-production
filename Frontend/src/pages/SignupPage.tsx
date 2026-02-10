@@ -24,7 +24,21 @@ const SignupPage: React.FC = () => {
 
   useEffect(() => {
     if (roleFromURL) setForm(prev => ({ ...prev, role: roleFromURL }));
-  }, [roleFromURL]);
+
+    // Auth redirection
+    const token = localStorage.getItem("token");
+    const userStr = localStorage.getItem("user");
+
+    if (token && userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        navigate(user.role === "client" ? "/client-dashboard" : "/expert-dashboard");
+      } catch (e) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+      }
+    }
+  }, [roleFromURL, navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });

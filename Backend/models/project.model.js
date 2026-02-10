@@ -57,6 +57,19 @@ const projectSchema = new mongoose.Schema({
     type: Date,
     default: null,
   },
+  draftStatus: {
+    type: String,
+    enum: ["pending_review", "accepted", "rejected", null],
+    default: null,
+  },
+  attemptsCount: {
+    type: Number,
+    default: 0,
+  },
+  rejectedExperts: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+  }],
 
   status: {
     type: String,
@@ -69,5 +82,10 @@ const projectSchema = new mongoose.Schema({
     default: Date.now,
   },
 });
+
+// Indexes for performance optimization
+projectSchema.index({ assignedExpert: 1, status: 1 }); // For fetching expert's projects
+projectSchema.index({ status: 1, assignedAt: 1, draftSubmitted: 1 }); // For timeout monitor
+projectSchema.index({ clientId: 1, status: 1 }); // For fetching client's projects
 
 export const Project = mongoose.model("Project", projectSchema);
