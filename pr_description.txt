@@ -1,0 +1,42 @@
+This PR implements the **Expert Review & Reassignment System**, a critical workflow for the Unhire platform. It also includes a comprehensive codebase audit and patch addressing security, reliability, and code quality.
+
+## 🎯 Summary
+- **Feature:** Full expert review workflow (submit draft → approve/reject → auto-reassignment).
+- **Fixes:** 15+ reliability and security fixes across 14 files.
+- **Audit:** Codebase cleanup and optimization.
+
+## 🔧 Key Changes
+
+### 1. Date Validation & Logic
+- **Enforced Deadlines:** Added 3-layer validation (UI, Controller, Schema) to prevent projects with past deadlines.
+- **Timer Fix:** `getProjectStatusService` now correctly calculates remaining time based on `assignedAt` (expert claim time) instead of `createdAt`.
+
+### 2. Email Service Overhaul
+- **Reliability:** Rewrote `email.service.js` with 3-attempt retry logic and exponential backoff.
+- **Performance:** All email calls are now **non-blocking** (fire-and-forget) to ensure API responsiveness.
+- **Configuration:** Added timeouts (10s connection, 15s socket) and lazy transporter initialization.
+- **Fix:** Resolved a crash in `sendDraftApprovalEmail` where an ObjectId was passed instead of a user object.
+
+### 3. Security Hardening
+- **Ghost Token Guard:** `auth.middleware.js` now checks if the user still exists in the DB before authorizing.
+- **Input Validation:** Added regex validation for email and min-length check for password in `auth.controller.js`.
+- **Sanitization:** Added input trimming in `project.controller.js`.
+- **Error Handling:** Added `try/catch` blocks in `profile.controller.js` and `admin.controller.js`.
+
+### 4. Code Quality
+- **Cleanup:** Removed unused imports and state in `PostProjectPage.tsx`.
+- **Fix:** Changed `skills` in `user.model.js` from `required: true` to `default: []` to unblock client registration.
+- **Consistency:** Standardized `req.user.id` usage across controllers.
+
+## 🧪 Testing
+- **Manual Verification:** Tested all flows via curl (see `TESTING_GUIDE.md` for details).
+- **Validation:** Verified email retries by simulating SMTP failures.
+- **Edge Cases:** Tested past deadlines, deleted users, and invalid inputs.
+
+## 📋 Files Modified
+- `models/project.model.js`, `models/user.model.js`
+- `controllers/project.controller.js`, `controllers/auth.controller.js`, `controllers/profile.controller.js`, `controllers/admin.controller.js`
+- `services/email.service.js`, `services/project.service.js`, `services/review.service.js`, `services/expert.service.js`
+- `middleware/auth.middleware.js`
+- `index.js`, `.env.example`
+- `frontend/src/pages/PostProjectPage.tsx`

@@ -85,6 +85,10 @@ const projectSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
   }],
+  rejectionCount: {
+    type: Number,
+    default: 0,
+  },
 
   status: {
     type: String,

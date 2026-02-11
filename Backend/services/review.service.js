@@ -79,9 +79,11 @@ export const rejectDraftService = async (projectId, clientId, rejectionReason = 
         project.rejectedExperts.push(rejectedExpertId);
     }
 
-    // Increment attempts count
+    // Increment attempts count and rejection count
     project.attemptsCount += 1;
+    project.rejectionCount += 1;
     project.draftStatus = "rejected";
+    project.save(); // Save immediately to persist counts
 
     // Notify the rejected expert
     if (rejectedExpertId) {
@@ -94,7 +96,7 @@ export const rejectDraftService = async (projectId, clientId, rejectionReason = 
         );
         const expert = await User.findById(rejectedExpertId);
         if (expert) {
-            sendDraftRejectionEmail(expert, project, rejectionReason).catch(err =>
+            sendDraftRejectedEmail(expert, project).catch(err =>
                 console.error("[EMAIL] Failed to send rejection email:", err.message)
             );
         }

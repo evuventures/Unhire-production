@@ -16,6 +16,13 @@ import { verifyTransporter } from "./services/email.service.js";
 dotenv.config();
 const app = express();
 
+import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
+import { errorHandler } from './middleware/error.middleware.js';
+
+app.use(helmet());
+app.use(cookieParser());
+
 // ---------- CORS ----------
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',')
@@ -52,6 +59,8 @@ app.use("/api/notifications", notificationRoutes);
 
 
 app.get('/', (req, res) => res.send('Server is running!'));
+
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

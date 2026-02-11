@@ -257,3 +257,140 @@ curl -X PUT http://localhost:5000/api/notifications/read-all \
 **Server crashes:**
 - Check terminal for error messages
 - Verify MongoDB connection string in `.env`
+
+---
+
+## 📅 Testing: Date Validation (2026-02-10 Patch)
+
+### Test 1: Past deadline rejected by API
+
+```bash
+curl -X POST http://localhost:5000/api/projects \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_CLIENT_TOKEN" \
+  -d '{"title":"Test","description":"test","budgetType":"fixed","budgetAmount":100,"deadline":"2020-01-01","category":"Web Development"}'
+```
+
+**Expected:** `400 { "message": "Deadline cannot be in the past. Please select today or a future date." }`
+
+### Test 2: Valid future deadline accepted
+
+```bash
+curl -X POST http://localhost:5000/api/projects \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_CLIENT_TOKEN" \
+  -d '{"title":"Valid Project","description":"testing","budgetType":"fixed","budgetAmount":100,"deadline":"2027-06-01","category":"Web Development"}'
+```
+
+**Expected:** `201` success
+
+### Test 3: Frontend date picker
+
+1. Navigate to `/post-project`
+2. Click the "Deadline Date" input field
+3. **Verify:** Past dates should be greyed out / unselectable
+
+---
+
+## ✉️ Testing: Email Service (2026-02-10 Patch)
+
+### Test 1: No SMTP credentials (graceful fallback)
+
+1. Remove or comment out `SMTP_USER` and `SMTP_PASS` from `.env`
+2. Start the server: `npm run dev`
+3. **Verify terminal shows:** `[EMAIL] SMTP not configured — emails will be mocked to console.`
+4. Trigger any email-sending action (e.g., expert claims project)
+5. **Verify terminal shows:** `[EMAIL MOCK] To: ... | Subject: ...`
+6. **Verify:** API response returns successfully (not blocked by email)
+
+### Test 2: Invalid SMTP credentials (retry + graceful failure)
+
+1. Set `SMTP_USER=invalid` and `SMTP_PASS=invalid` in `.env`
+2. Start the server
+3. **Verify terminal shows:** `[EMAIL] SMTP verification failed: ...`
+4. Trigger an email action
+5. **Verify terminal shows:** 3 retry attempts with `[EMAIL RETRY]` messages
+6. **Verify:** API response still returns successfully
+
+### Test 3: Valid SMTP credentials
+
+1. Set valid Gmail App Password credentials in `.env`
+2. Start the server
+3. **Verify terminal shows:** `[EMAIL] SMTP transporter verified ✅`
+4. Trigger email actions → verify emails arrive
+
+---
+
+## 🔐 Testing: Auth & Security (2026-02-10 Patch)
+
+### Test 1: Empty login body
+
+```bash
+curl -X POST http://localhost:5000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+**Expected:** `400 { "message": "Email and password are required" }`
+
+### Test 2: Invalid email format
+
+```bash
+curl -X POST http://localhost:5000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"notanemail","password":"Test123!"}'
+```
+
+**Expected:** `400 { "message": "Invalid email format" }`
+
+### Test 3: Short password on signup
+
+```bash
+curl -X POST http://localhost:5000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Test","email":"test@test.com","password":"ab","role":"client"}'
+```
+
+**Expected:** `400 { "message": "Password must be at least 6 characters" }`
+
+### Test 4: Deleted user token (ghost token)
+
+1. Create a user and get their token
+2. Delete the user from MongoDB: `db.users.deleteOne({email: "test@test.com"})`
+3. Use their old token:
+
+```bash
+curl http://localhost:5000/api/profile \
+  -H "Authorization: Bearer OLD_TOKEN"
+```
+
+**Expected:** `401 { "message": "User no longer exists" }`
+
+### Test 5: Client signup without skills
+
+```bash
+curl -X POST http://localhost:5000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Client User","email":"client@test.com","password":"Test123!","role":"client"}'
+```
+
+**Expected:** `201` success (previously failed due to `skills: required`)
+
+---
+
+## 🎯 Extended Verification Checklist (2026-02-10 Patch)
+
+| Test | Expected Result | ✅ |
+|------|-----------------|---|
+| Past deadline via API | 400 error | ☐ |
+| Future deadline via API | 201 success | ☐ |
+| Date picker blocks past dates | Grey/disabled | ☐ |
+| No SMTP → mock fallback | Console logs, no crash | ☐ |
+| Invalid SMTP → retries | 3 attempts logged, API works | ☐ |
+| Empty login body | 400 validation error | ☐ |
+| Invalid email format | 400 validation error | ☐ |
+| Short password | 400 validation error | ☐ |
+| Ghost token | 401 response | ☐ |
+| Client signup (no skills) | 201 success | ☐ |
+| Project status timer | Uses `assignedAt`, not `createdAt` | ☐ |
+| Draft approval email | Sends without ObjectId crash | ☐ |
