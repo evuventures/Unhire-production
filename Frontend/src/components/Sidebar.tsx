@@ -14,7 +14,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import logo from '../assets/logo.svg';
 
 interface SidebarProps {
-    role: 'client' | 'expert';
+    role: 'client' | 'expert' | 'admin';
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ role }) => {
@@ -53,7 +53,12 @@ const Sidebar: React.FC<SidebarProps> = ({ role }) => {
         ...commonLinks,
     ];
 
-    const links = role === 'client' ? clientLinks : expertLinks;
+    const adminLinks = [
+        { name: 'Admin', path: '/admin', icon: LayoutDashboard },
+        ...commonLinks,
+    ];
+
+    const links = role === 'admin' ? adminLinks : role === 'client' ? clientLinks : expertLinks;
 
     return (
         <motion.aside
