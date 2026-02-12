@@ -39,9 +39,9 @@ const LoginPage: React.FC = () => {
           role: data.role
         }));
 
-        if (data.role === "client") navigate("/client-dashboard");
+        if (data.role === "admin") navigate("/admin");
         else if (data.role === "expert") navigate("/expert-dashboard");
-        else navigate("/");
+        else navigate("/client-dashboard");
       } else {
         alert(data.message || "Login failed. Check credentials.");
       }
@@ -77,9 +77,9 @@ const LoginPage: React.FC = () => {
           role: data.role
         }));
 
-        if (data.role === "client") navigate("/client-dashboard");
+        if (data.role === "admin") navigate("/admin");
         else if (data.role === "expert") navigate("/expert-dashboard");
-        else navigate("/");
+        else navigate("/client-dashboard");
       } else {
         alert(data.message || "Google Login failed.");
       }

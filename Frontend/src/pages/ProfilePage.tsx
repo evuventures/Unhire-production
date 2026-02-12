@@ -42,7 +42,7 @@ const ProfilePage: React.FC = () => {
 
     const backendUrl = import.meta.env.VITE_BACKEND_URL;
     const token = localStorage.getItem('token');
-    const userRole = JSON.parse(localStorage.getItem('user') || '{}').role || 'expert';
+    const userRole = JSON.parse(localStorage.getItem('user') || '{}').role || 'client';
 
     useEffect(() => {
         fetchProfile();
@@ -50,7 +50,7 @@ const ProfilePage: React.FC = () => {
 
     const fetchProfile = async () => {
         try {
-            const endpoint = userRole === 'client' ? '/api/auth/me' : '/api/expert/profile';
+            const endpoint = userRole === 'expert' ? '/api/expert/profile' : '/api/profile';
             const response = await fetch(`${backendUrl}${endpoint}`, {
                 headers: { 'Authorization': `Bearer ${token}` },
             });
@@ -136,7 +136,7 @@ const ProfilePage: React.FC = () => {
                                 initial={{ opacity: 0, x: -10 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 className="flex items-center gap-2 text-text-secondary mb-4 hover:text-white transition-colors cursor-pointer w-fit"
-                                onClick={() => navigate(userRole === 'client' ? '/client-dashboard' : '/expert-dashboard')}
+                                onClick={() => navigate(userRole === 'admin' ? '/admin' : userRole === 'expert' ? '/expert-dashboard' : '/client-dashboard')}
                             >
                                 <ArrowLeft size={16} />
                                 <span className="text-sm font-medium">Back to Workspace</span>
@@ -172,6 +172,17 @@ const ProfilePage: React.FC = () => {
                             </div>
                         )}
                     </div>
+
+                    {userRole === 'client' && !editing && (
+                        <div className="mb-12">
+                            <button
+                                onClick={() => navigate('/apply-expert')}
+                                className="btn-secondary py-3 px-8 text-sm"
+                            >
+                                Apply to Become an Expert
+                            </button>
+                        </div>
+                    )}
 
                     <div className="grid grid-cols-1 gap-8">
                         {/* Profile Info Card */}

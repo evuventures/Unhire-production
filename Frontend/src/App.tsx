@@ -11,6 +11,8 @@ import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
 import PaymentsPage from './pages/PaymentsPage';
 import OnboardingPage from './pages/OnboardingPage';
+import AdminDashboard from './pages/AdminDashboard';
+import ApplyExpertPage from './pages/ApplyExpertPage';
 
 // Route protection for specific roles
 const RoleProtectedRoute: React.FC<{ children: React.ReactNode, allowedRole: string }> = ({ children, allowedRole }) => {
@@ -21,9 +23,22 @@ const RoleProtectedRoute: React.FC<{ children: React.ReactNode, allowedRole: str
     return <Navigate to="/login" replace />;
   }
 
-  const user = JSON.parse(userStr);
+  let user: any;
+  try {
+    user = JSON.parse(userStr);
+  } catch {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!user || !user.role) {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    return <Navigate to="/login" replace />;
+  }
   if (user.role !== allowedRole) {
-    const defaultPath = user.role === "client" ? "/client-dashboard" : "/expert-dashboard";
+    const defaultPath = user.role === "admin" ? "/admin" : user.role === "client" ? "/client-dashboard" : "/expert-dashboard";
     return <Navigate to={defaultPath} replace />;
   }
 
@@ -72,6 +87,24 @@ function App() {
             element={
               <RoleProtectedRoute allowedRole="expert">
                 <OnboardingPage />
+              </RoleProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/apply-expert"
+            element={
+              <RoleProtectedRoute allowedRole="client">
+                <ApplyExpertPage />
+              </RoleProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin"
+            element={
+              <RoleProtectedRoute allowedRole="admin">
+                <AdminDashboard />
               </RoleProtectedRoute>
             }
           />

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
 import { jwtDecode } from "jwt-decode";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { ArrowLeft, User, Mail, Lock, Briefcase, ArrowRight, Loader2, Sparkles } from "lucide-react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
@@ -18,14 +18,15 @@ const SignupPage: React.FC = () => {
     name: "",
     email: "",
     password: "",
-    role: roleFromURL || "client",
-    skills: "",
+    role: "client",
   });
 
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (roleFromURL) setForm(prev => ({ ...prev, role: roleFromURL }));
+    if (roleFromURL && roleFromURL !== 'client') {
+      navigate('/apply-expert');
+    }
   }, [roleFromURL]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -40,7 +41,7 @@ const SignupPage: React.FC = () => {
 
     const payload = {
       ...form,
-      skills: form.role === "expert" ? form.skills.split(",").map(s => s.trim()) : [],
+      role: 'client',
     };
 
     try {
@@ -53,8 +54,6 @@ const SignupPage: React.FC = () => {
       const data = await res.json();
 
       if (res.ok && data.token) {
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify(data.user));
         alert("Signup successful! You can now log in.");
         navigate("/login");
       } else {
@@ -79,7 +78,7 @@ const SignupPage: React.FC = () => {
           email: decoded.email,
           googleId: decoded.sub,
           avatar: decoded.picture,
-          role: form.role // Use selected role
+          role: 'client'
         }),
       });
 
@@ -93,13 +92,7 @@ const SignupPage: React.FC = () => {
           role: data.role
         }));
 
-        if (data.role === "expert") {
-          // Check if profile is complete (e.g. has skills)
-          // For now, redirect to onboarding if it's an expert
-          navigate("/onboarding");
-        } else {
-          navigate("/client-dashboard");
-        }
+        navigate("/client-dashboard");
       } else {
         alert(data.message || "Google Signup failed.");
       }
@@ -190,42 +183,20 @@ const SignupPage: React.FC = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-text-secondary px-1">I want to</label>
+                    <label className="text-sm font-medium text-text-secondary px-1">Account type</label>
                     <div className="relative">
                       <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary" size={18} />
-                      <select
-                        name="role"
-                        value={form.role}
-                        onChange={handleChange}
-                        className="w-full bg-surface border border-border rounded-xl py-3.5 pl-12 pr-4 outline-none focus:border-primary/50 transition-all text-white appearance-none cursor-pointer"
-                      >
-                        <option value="client">Hire Experts</option>
-                        <option value="expert">Find Work</option>
-                      </select>
+                      <input
+                        value="Client"
+                        readOnly
+                        className="w-full bg-surface border border-border rounded-xl py-3.5 pl-12 pr-4 outline-none text-white opacity-90"
+                      />
                     </div>
+                    <p className="text-[10px] text-text-secondary px-1 italic">
+                      Want to work as an expert? Create an account, then apply for expert approval.
+                    </p>
                   </div>
                 </div>
-
-                <AnimatePresence mode="wait">
-                  {form.role === "expert" && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="space-y-2 overflow-hidden"
-                    >
-                      <label className="text-sm font-medium text-text-secondary px-1">Skills (optional)</label>
-                      <textarea
-                        name="skills"
-                        placeholder="React, Node.js, UI/UX Design..."
-                        value={form.skills}
-                        onChange={handleChange}
-                        className="w-full bg-surface border border-border rounded-xl py-3.5 px-4 outline-none focus:border-primary/50 transition-all text-white placeholder:text-white/20 min-h-[100px] resize-none"
-                      />
-                      <p className="text-[10px] text-text-secondary px-1 italic">Separate skills with commas</p>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
 
                 <button
                   type="submit"
