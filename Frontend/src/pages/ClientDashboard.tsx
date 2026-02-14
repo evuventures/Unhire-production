@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -15,73 +15,81 @@ import {
   DollarSign,
   Calendar,
   User,
-  X
+  X,
+  LucideIcon
 } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 
+import apiClient from '../api/client';
+import { useAuth } from '../context/AuthContext';
+
+interface Project {
+  _id: string;
+  title: string;
+  category: string;
+  status: 'active' | 'unassigned' | 'completed' | 'expired' | 'in_progress';
+  budgetAmount: number;
+  deadline: string;
+}
+
+interface ProjectStatus {
+  title: string;
+  status: 'active' | 'unassigned' | 'completed' | 'expired' | 'in_progress';
+  assignedExpert?: {
+    name: string;
+  };
+  remainingTime?: {
+    hours: number;
+    minutes: number;
+    seconds: number;
+  };
+}
+
+interface StatusConfigItem {
+  color: string;
+  bg: string;
+  icon: LucideIcon;
+}
+
 const ClientDashboard = () => {
-  const [projects, setProjects] = useState([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
-  const [selectedProjectStatus, setSelectedProjectStatus] = useState(null);
+  const [selectedProjectStatus, setSelectedProjectStatus] = useState<ProjectStatus | null>(null);
+  const { user } = useAuth(); // Use auth context
 
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const user = JSON.parse(localStorage.getItem('user'));
-        if (!token || !user) {
-          throw new Error('Authentication token or user info not found');
-        }
-        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/projects/client/${user._id}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch projects');
-        }
-
-        const data = await response.json();
-        setProjects(data);
-      } catch (err) {
-        setError(err.message);
+        const response = await apiClient.get(`/api/projects/client/${user?._id}`);
+        setProjects(response.data);
+      } catch (err: any) {
+        setError(err.message || "Failed to load projects");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProjects();
-  }, []);
+    if (user) fetchProjects();
+  }, [user]);
 
-  const handleCheckStatus = async (projectId) => {
+  const handleCheckStatus = async (projectId: string) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/projects/${projectId}/status`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch project status');
-      }
-
-      const data = await response.json();
-      setSelectedProjectStatus(data);
+      const response = await apiClient.get(`/api/projects/${projectId}/status`);
+      setSelectedProjectStatus(response.data);
       setIsStatusModalOpen(true);
-    } catch (err) {
-      setError(err.message);
+    } catch (err: any) {
+      setError(err.message || 'Failed to fetch status');
     }
   };
 
-  const statusConfig = {
+  const statusConfig: Record<string, StatusConfigItem> = {
     active: { color: 'text-green-400', bg: 'bg-green-400/10', icon: CheckCircle2 },
     unassigned: { color: 'text-yellow-400', bg: 'bg-yellow-400/10', icon: Clock },
     completed: { color: 'text-blue-400', bg: 'bg-blue-400/10', icon: CheckCircle2 },
     expired: { color: 'text-red-400', bg: 'bg-red-400/10', icon: AlertCircle },
+    in_progress: { color: 'text-blue-400', bg: 'bg-blue-400/10', icon: Clock }, // Added in_progress default
   };
 
   if (loading) {

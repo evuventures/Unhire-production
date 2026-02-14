@@ -4,7 +4,7 @@
 
 **Date:** 2026-02-07  
 **Branch:** `BE-expert-review-reassignment-system`  
-**Author:** AI Assistant
+**Author:** Qamber
 
 ---
 
@@ -188,7 +188,7 @@ const project = await Project.findOne({
 const notification = await Notification.findOneAndUpdate(
     { _id: notificationId, userId }, // Verifies ownership
     ...
-);
+});
 ```
 **Status:** Users can only mark their own notifications as read. ✅
 
@@ -262,5 +262,272 @@ try {
 
 3. **Edge Cases to Test:**
    - Reject when no other experts available
-   - Concurrent claim attempts
-   - Timeout at exactly 3 hours
+
+---
+
+## Client Review UI & Auth Fixes
+**Date:** 2026-02-07
+**Changes:**
+- Created `ClientProjectDetailsPage.tsx` for clients to view project details and review drafts (Approve/Reject).
+- Added route `/client/project/:id` in `App.tsx`.
+- Implemented authenticated user redirection in `LoginPage.tsx` and `SignupPage.tsx` to prevent duplicate logins.
+
+---
+
+## Codebase Analysis & Optimizations
+**Date:** 2026-02-07
+**Action:** Detailed review of backend files for security, performance, and best practices.
+
+### 🔒 Security Fixes
+- **ObjectId Comparison:** Fixed potential bug in `review.service.js` and `project.service.js` where checking `includes()` on an array of ObjectIds could fail. 
+  - *Fix:* Changed to use `some()` with explicit `.toString()` conversion.
+
+### ⚡ Performance Optimizations
+- **Project Model:** Added compound indexes to support frequent query patterns:
+  - `{ assignedExpert: 1, status: 1 }` (Expert dashboard queries)
+  - `{ status: 1, assignedAt: 1, draftSubmitted: 1 }` (Cron job timeout monitor)
+  - `{ clientId: 1, status: 1 }` (Client dashboard queries)
+- **Notification Model:** Added compound index `{ userId: 1, createdAt: -1 }` to optimize fetching user notifications sorted by time.
+
+
+### ✅ Best Practices
+- **Frontend Code Quality:** Fixed TypeScript errors and removed unused imports in `ClientProjectDetailsPage.tsx`.
+
+---
+
+## Email Notification System
+**Date:** 2026-02-07
+**Action:** Implemented email notifications using `nodemailer`.
+
+### 📧 New Features
+- **Email Service:** Created `services/email.service.js` to handle email sending with templates.
+- **Workflow Integration:**
+  - **Project Assignment:** Emails sent to experts when assigned/reassigned (`expert.service.js`, `review.service.js`, `project.service.js`).
+  - **Draft Submission:** Emails sent to clients when experts submit drafts (`expert.service.js`).
+  - **Draft Decision:** Emails sent to experts upon approval/rejection (`review.service.js`).
+  - **Project Expiration:** Emails sent to clients if a project expires after max attempts (`project.service.js`, `review.service.js`).
+
+> [!NOTE]
+> SMTP credentials (`SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`) must be added to `.env` for emails to be sent. Code gracefully falls back to console logs if credentials are missing.
+
+---
+
+## Codebase Audit & Patch — Date Validation, Email Reliability, Security & Code Quality
+**Date:** 2026-02-10  
+**Author:** Qamber  
+
+---
+
+### 🎯 Summary
+Comprehensive audit and patch addressing date validation enforcement, email service reliability, critical runtime bugs, security vulnerabilities, and code quality improvements across 14 existing files.
+
+---
+
+### 🔧 Date Validation Bug — Fixed
+
+| Layer | File | Fix |
+|-------|------|-----|
+| **UI** | `PostProjectPage.tsx` | Added `min={todayStr}` attribute on deadline date input + client-side validation before submit |
+| **Controller** | `project.controller.js` | Added server-side check: `parsedDeadline < today` → returns 400 with clear message |
+| **Schema** | `project.model.js` | Added Mongoose `validate` function on `deadline` field — rejects dates before today on new documents |
+
+---
+
+### 📧 Email Service — Overhauled
+
+**File:** `email.service.js`
+
+| Improvement | Details |
+|------------|---------|
+| **Retry logic** | 3 attempts with exponential backoff (1s → 2s → 4s) |
+| **Timeouts** | `connectionTimeout: 10s`, `socketTimeout: 15s` |
+| **Lazy init** | Transporter only created when `SMTP_USER`/`SMTP_PASS` exist — avoids crash on missing config |
+| **Startup verify** | `verifyTransporter()` called on boot, logs SMTP reachability status |
+| **Non-blocking** | All email calls across services changed to fire-and-forget (`.catch(...)`) |
+| **Auto-secure** | Port 465 auto-detects `secure: true` |
+
+**Files with non-blocking email changes:**
+- `expert.service.js` — `claimProjectService`, `submitDraftService`
+- `review.service.js` — `approveDraftService`, `rejectDraftService`, `autoReassignProject`
+- `project.service.js` — `markExpiredProjectsService`, `autoReassignTimedOutProject`
+
+---
+
+### 🐛 Critical Bug Fixes
+
+| Bug | File | Issue | Fix |
+|-----|------|-------|-----|
+| **ObjectId passed as email recipient** | `review.service.js` line 45 | `sendDraftApprovalEmail(project.assignedExpert, project)` received an un-populated ObjectId instead of expert object — would crash or send blank emails | Now fetches expert with `User.findById()` before emailing |
+| **Timer uses wrong field** | `project.service.js` line 160 | `getProjectStatusService()` calculated remaining time from `createdAt` but the 3-hour timer starts at `assignedAt` | Changed to use `assignedAt`; returns zeros when project is not `in_progress` |
+| **Skills required for all roles** | `user.model.js` | `skills: { required: true }` blocked client registration since clients have no skills | Changed to `default: []` |
+| **Null-user ghost token** | `auth.middleware.js` | If user was deleted after token was issued, `req.user` would be null causing crashes | Added null check → returns 401 |
+
+---
+
+### 🔐 Security Fixes
+
+| Fix | File | Details |
+|-----|------|---------|
+| **Input validation** | `auth.controller.js` | Added email regex validation, password min-length (6), required field checks for login/signup |
+| **Input sanitization** | `project.controller.js` | String fields (`title`, `description`, etc.) are `.trim()`'d before persistence |
+| **Error handling** | `profile.controller.js` | Added try/catch — previously unhandled rejections crashed the server |
+| **Error handling** | `admin.controller.js` | Added try/catch — same issue |
+| **Ghost token guard** | `auth.middleware.js` | Returns 401 when token references a deleted user |
+
+---
+
+### ✅ Code Quality & Config
+
+| Change | File | Details |
+|--------|------|---------|
+| **Removed unused imports** | `PostProjectPage.tsx` | `PlusCircle`, `CheckCircle2`, `AnimatePresence` |
+| **Removed unused state** | `PostProjectPage.tsx` | `step`, `setStep` |
+| **Removed console.log** | `project.controller.js` | Gemini recommendation log removed for production |
+| **Config documentation** | `.env.example` | Added all env vars: `SMTP_*`, `GEMINI_API_KEY`, `FRONTEND_URL`, `ALLOWED_ORIGINS` |
+| **Startup verification** | `index.js` | Calls `verifyTransporter()` after MongoDB connects |
+| **ID consistency** | `profile.controller.js` | Fixed `req.user._id` → `req.user.id` |
+
+---
+
+### 🧪 How to Test
+
+**Date validation:**
+```bash
+# Should return 400
+curl -X POST http://localhost:5000/api/projects \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -d '{"title":"Test","description":"test","budgetType":"fixed","deadline":"2020-01-01"}'
+```
+
+**Email service:**
+- Without SMTP vars → logs `[EMAIL MOCK]`, no crash
+- With invalid SMTP → logs `[EMAIL ERROR]` with retries, API responses succeed
+- With valid SMTP → logs `[EMAIL SENT]` after successful delivery
+
+**Auth validation:**
+```bash
+# Should return 400
+curl -X POST http://localhost:5000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+---
+
+### 📋 Files Modified (14 total)
+
+| File | Changes |
+|------|---------|
+| `models/project.model.js` | Schema deadline validator |
+| `models/user.model.js` | skills: required → default |
+| `services/email.service.js` | Full rewrite: retry, timeouts, lazy init, verify |
+| `services/expert.service.js` | Non-blocking email calls |
+| `services/review.service.js` | ObjectId fix + non-blocking emails |
+| `services/project.service.js` | Timer fix + non-blocking emails |
+| `controllers/project.controller.js` | Date validation + input sanitization |
+| `controllers/auth.controller.js` | Input validation (email, password) |
+| `controllers/profile.controller.js` | Try/catch + ID consistency |
+| `controllers/admin.controller.js` | Try/catch error handling |
+| `middleware/auth.middleware.js` | Null-user guard |
+| `index.js` | Email transporter verification on startup |
+| `.env.example` | All env vars documented |
+| `PostProjectPage.tsx` | min-date, client validation, cleanup |
+
+---
+
+## Email Service Migration — Nodemailer → Resend
+**Date:** 2026-02-11  
+**Author:** Qamber  
+
+---
+
+### 🎯 Summary
+Migrated the email service from `nodemailer` (SMTP-based) to **Resend** (API-based) for more reliable, modern email delivery without needing SMTP credentials.
+
+---
+
+### 🔄 What Changed
+
+| Change | Details |
+|--------|---------|
+| **Replaced dependency** | Removed `nodemailer`, installed `resend` |
+| **Rewrote email service** | `email.service.js` now uses the Resend SDK instead of SMTP transport |
+| **Updated env vars** | Replaced `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` with `RESEND_API_KEY` and `RESEND_FROM_EMAIL` |
+| **Kept same API** | All exported functions unchanged — zero impact on consuming services |
+
+---
+
+### 📁 Files Modified (4 total)
+
+| File | Changes |
+|------|---------|
+| `services/email.service.js` | Full rewrite: nodemailer → Resend SDK, same exports preserved |
+| `package.json` | Removed `nodemailer`, added `resend` |
+| `.env` | Added `RESEND_API_KEY`, `RESEND_FROM_EMAIL` |
+| `.env.example` | Replaced SMTP vars with Resend vars |
+
+---
+
+### 📧 Configuration
+
+```env
+RESEND_API_KEY=re_xxxxx          # Your Resend API key
+RESEND_FROM_EMAIL=Unhire <noreply@yourdomain.com>  # Requires verified domain
+```
+
+> [!NOTE]
+> The default sender is `onboarding@resend.dev` (Resend test address — can only send to your account email). Verify a custom domain at https://resend.com/domains to send to any recipient.
+
+---
+
+### 🧪 How to Test
+
+**Without API key** → logs `[EMAIL MOCK]`, no crash  
+**With API key** → logs `[EMAIL SENT]` after successful delivery  
+**With invalid key** → logs `[EMAIL ERROR]` with retries, API responses still succeed  
+
+---
+
+## Authentication System Overhaul & Security Hardening
+**Date:** 2026-02-11
+**Author:** Qamber
+
+---
+
+### 🎯 Summary
+Complete refactoring of the authentication system to implement industry best practices, including secure cookies for JWT storage, strict input validation, 2FA, rate limiting, and centralized frontend auth state.
+
+---
+
+### 🔒 Security & Architecture Changes
+
+| Feature | Implementation Details |
+|---------|------------------------|
+| **Secure Cookies** | Replaced `localStorage` with `httpOnly` cookies for JWT tokens. Prevents XSS attacks. |
+| **Middleware Validation** | Replaced manual validation with strict **Joi Schema Validation** (`middleware/validate.js`). |
+| **Frontend Auth Context** | Created `AuthContext.tsx` and centralized `apiClient` (Axios) to handle auth state and errors globally. |
+| **Rate Limiting** | Added `express-rate-limit` to login, signup, and reset-password routes. |
+| **2FA & Password Reset** | Implemented email-based Two-Factor Authentication (Login) and Password Reset flow. |
+
+---
+
+### 🐛 Fixes & Improvements
+
+| Area | Fix |
+|------|-----|
+| **HTTP 400 Errors** | Fixed 400 errors in Signup/Reset Password by ensuring strict payload validation on the backend. |
+| **HTTP 401 Loop** | Fixed session loss issues by automating token attachment via cookies. |
+| **Notification Bug** | Fixed `SettingsPage.tsx` bug where sliders interfered with each other (moved component outside parent). |
+| **Project Timeout** | Fixed logic to properly expire projects after 3 hours and track expert rejections. |
+
+---
+
+### 📁 Files Modified
+- `Backend/index.js` (Added helmet, cookie-parser, error middleware)
+- `Backend/controllers/auth.controller.js` (Rewritten for cookies & validation)
+- `Backend/routes/auth.routes.js` (Added validation & rate limiters)
+- `Frontend/src/context/AuthContext.tsx` (New global auth provider)
+- `Frontend/src/api/client.ts` (New axios client)
+- `Frontend/src/pages/LoginPage.tsx` (Rewritten for 2FA flow)
+- `Frontend/src/pages/SignupPage.tsx` (Using new AuthContext)

@@ -46,41 +46,6 @@ const SettingsPage: React.FC = () => {
         }, 1000);
     };
 
-    const SettingToggle = ({
-        label,
-        description,
-        enabled,
-        onToggle,
-        icon: Icon
-    }: {
-        label: string;
-        description: string;
-        enabled: boolean;
-        onToggle: () => void;
-        icon: any;
-    }) => (
-        <div className="flex items-center justify-between py-6 border-b border-white/5 last:border-0">
-            <div className="flex gap-4">
-                <div className="p-2.5 rounded-xl bg-white/5 text-text-secondary h-fit">
-                    <Icon size={20} />
-                </div>
-                <div>
-                    <h3 className="font-bold text-white mb-1">{label}</h3>
-                    <p className="text-sm text-text-secondary max-w-sm">{description}</p>
-                </div>
-            </div>
-            <button
-                onClick={onToggle}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-300 ${enabled ? 'bg-primary shadow-lg shadow-primary/20' : 'bg-surface border border-border'}`}
-            >
-                <motion.span
-                    animate={{ x: enabled ? 26 : 4 }}
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm`}
-                />
-            </button>
-        </div>
-    );
-
     return (
         <div className="flex bg-background min-h-screen text-text-primary">
             <Sidebar role={userRole as any} />
@@ -252,5 +217,40 @@ const SettingsPage: React.FC = () => {
         </div>
     );
 };
+
+const SettingToggle = ({
+    label,
+    description,
+    enabled,
+    onToggle,
+    icon: Icon
+}: {
+    label: string;
+    description: string;
+    enabled: boolean;
+    onToggle: () => void;
+    icon: any;
+}) => (
+    <div className="flex items-center justify-between py-6 border-b border-white/5 last:border-0">
+        <div className="flex gap-4">
+            <div className="p-2.5 rounded-xl bg-white/5 text-text-secondary h-fit">
+                <Icon size={20} />
+            </div>
+            <div>
+                <h3 className="font-bold text-white mb-1">{label}</h3>
+                <p className="text-sm text-text-secondary max-w-sm">{description}</p>
+            </div>
+        </div>
+        <button
+            onClick={onToggle}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-300 ${enabled ? 'bg-primary shadow-lg shadow-primary/20' : 'bg-surface border border-border'}`}
+        >
+            <motion.span
+                animate={{ x: enabled ? 26 : 4 }}
+                className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm`}
+            />
+        </button>
+    </div>
+);
 
 export default SettingsPage;

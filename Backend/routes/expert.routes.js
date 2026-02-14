@@ -4,7 +4,9 @@ import {
     claimProject,
     submitDraft,
     getMyProjects,
+    getMyProjects,
     getExpertProfile,
+    submitApplication,
 } from "../controllers/expert.controller.js";
 import { protect, authorizeRoles } from "../middleware/auth.middleware.js";
 
@@ -27,5 +29,8 @@ router.post("/claim/:projectId", claimProject);
 
 // POST /api/expert/submit/:projectId - Submit draft
 router.post("/submit/:projectId", submitDraft);
+
+// POST /api/expert/apply - Submit expert application
+router.post("/apply", submitApplication);
 
 export default router;

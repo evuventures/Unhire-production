@@ -4,7 +4,8 @@ import { getExpertRecommendations } from "../utils/LLMengine.js";
 import { createNotification } from "./notification.service.js";
 import {
   sendProjectExpirationEmail,
-  sendProjectAssignmentEmail
+  sendProjectAssignmentEmail,
+  sendDraftRejectedEmail
 } from "./email.service.js";
 
 const MAX_ATTEMPTS = 3;
@@ -52,8 +53,9 @@ export const markExpiredProjectsService = async () => {
       project.rejectedExperts.push(timedOutExpertId);
     }
 
-    // Increment attempts count
+    // Increment attempts count and rejection count
     project.attemptsCount += 1;
+    project.rejectionCount += 1;
 
     // Notify the timed-out expert
     if (timedOutExpertId) {
@@ -63,6 +65,18 @@ export const markExpiredProjectsService = async () => {
         `Your submission for "${project.title}" timed out. The project has been reassigned.`,
         project._id
       );
+
+      // Send email
+      const expert = await User.findById(timedOutExpertId);
+      if (expert) {
+        // Using draft rejected email template for consistency, or we could create a specific timeout one.
+        // For now, let's use the generic rejection email but maybe we should format the reason.
+        // Actually, let's just use the notification message in the email if possible, 
+        // but sendDraftRejectedEmail takes a project and optional reason.
+        sendDraftRejectedEmail(expert, project, "Draft submission timed out (3 hours limit).").catch(err =>
+          console.error("[EMAIL] Failed to send rejection email:", err.message)
+        );
+      }
     }
 
     // Check if max attempts reached
@@ -81,10 +95,12 @@ export const markExpiredProjectsService = async () => {
         project._id
       );
 
-      // Send email
+      // Send email (non-blocking)
       const client = await User.findById(project.clientId);
       if (client) {
-        await sendProjectExpirationEmail(client, project);
+        sendProjectExpirationEmail(client, project).catch(err =>
+          console.error("[EMAIL] Failed to send expiration email:", err.message)
+        );
       }
 
       console.log(`[CRON] Project ${project._id} expired after ${MAX_ATTEMPTS} timeout attempts.`);
@@ -142,8 +158,10 @@ const autoReassignTimedOutProject = async (project) => {
     project._id
   );
 
-  // Send email
-  await sendProjectAssignmentEmail(newExpert, project);
+  // Send email (non-blocking)
+  sendProjectAssignmentEmail(newExpert, project).catch(err =>
+    console.error("[EMAIL] Failed to send assignment email:", err.message)
+  );
 
   console.log(`[CRON] Project ${project._id} reassigned to expert ${newExpert._id}`);
   return true;
@@ -156,18 +174,22 @@ export const getProjectStatusService = async (projectId) => {
 
   if (!project) throw new Error("Project not found");
 
-  // Calculate remaining time
-  const projectCreated = project.createdAt.getTime();
-  const expiryTime = projectCreated + 3 * 60 * 60 * 1000; // 3 hours
-  const now = Date.now();
-  let remainingMs = expiryTime - now;
-  if (remainingMs < 0) remainingMs = 0;
+  // Calculate remaining time from assignedAt (not createdAt)
+  let remaining = { hours: 0, minutes: 0, seconds: 0 };
 
-  const remaining = {
-    hours: Math.floor(remainingMs / (1000 * 60 * 60)),
-    minutes: Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60)),
-    seconds: Math.floor((remainingMs % (1000 * 60)) / 1000),
-  };
+  if (project.assignedAt && ["in_progress"].includes(project.status)) {
+    const assignedTime = new Date(project.assignedAt).getTime();
+    const expiryTime = assignedTime + 3 * 60 * 60 * 1000; // 3 hours from assignment
+    const now = Date.now();
+    let remainingMs = expiryTime - now;
+    if (remainingMs < 0) remainingMs = 0;
+
+    remaining = {
+      hours: Math.floor(remainingMs / (1000 * 60 * 60)),
+      minutes: Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60)),
+      seconds: Math.floor((remainingMs % (1000 * 60)) / 1000),
+    };
+  }
 
   return {
     id: project._id,

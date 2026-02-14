@@ -11,10 +11,18 @@ import expertRoutes from "./routes/expert.routes.js";
 import utilsRoutes from "./routes/utils.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
 import { startProjectMonitor } from "./cron/projectMonitor.js";
+import { verifyTransporter } from "./services/email.service.js";
 
 
 dotenv.config();
 const app = express();
+
+import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
+import { errorHandler } from './middleware/error.middleware.js';
+
+app.use(helmet());
+app.use(cookieParser());
 
 // ---------- CORS ----------
 const allowedOrigins = process.env.ALLOWED_ORIGINS
@@ -33,9 +41,10 @@ app.use(express.json());
 
 // MongoDB
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => {
+  .then(async () => {
     console.log("✅ MongoDB connected");
     startProjectMonitor();
+    await verifyTransporter();
   })
   .catch(err => console.error("❌ MongoDB connection error:", err));
 
@@ -53,6 +62,8 @@ app.use("/api/notifications", notificationRoutes);
 
 
 app.get('/', (req, res) => res.send('Server is running!'));
+
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

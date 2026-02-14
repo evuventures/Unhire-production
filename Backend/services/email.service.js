@@ -1,41 +1,89 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Create transporter
-const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: process.env.SMTP_PORT || 587,
-    secure: false, // true for 465, false for other ports
-    auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-    },
-});
+const MAX_RETRIES = 3;
+const BASE_DELAY_MS = 1000; // 1s, 2s, 4s exponential backoff
 
 /**
- * Send an email
+ * Lazy Resend client — only created when RESEND_API_KEY exists.
+ * Avoids crashes when env vars are missing.
+ */
+let _resend = null;
+const getResendClient = () => {
+    if (_resend) return _resend;
+
+    if (!process.env.RESEND_API_KEY) {
+        return null;
+    }
+
+    _resend = new Resend(process.env.RESEND_API_KEY);
+    return _resend;
+};
+
+/**
+ * The "from" address used for all outbound emails.
+ * Uses RESEND_FROM_EMAIL env var, or falls back to the Resend test address.
+ */
+const getFromAddress = () => {
+    return process.env.RESEND_FROM_EMAIL || 'Unhire <onboarding@resend.dev>';
+};
+
+/**
+ * Verify Resend API key is configured on startup.
+ */
+export const verifyTransporter = async () => {
+    const resend = getResendClient();
+    if (!resend) {
+        console.log('[EMAIL] Resend API key not configured — emails will be mocked to console.');
+        return false;
+    }
+    console.log('[EMAIL] Resend email service initialized ✅');
+    return true;
+};
+
+/**
+ * Helper: sleep for retry backoff
+ */
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Send an email with retry logic and exponential backoff.
+ * Never throws — logs errors gracefully.
  * @param {String} to - Recipient email
  * @param {String} subject - Email subject
  * @param {String} html - Email body (HTML)
  */
 export const sendEmail = async (to, subject, html) => {
-    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    const resend = getResendClient();
+
+    if (!resend) {
         console.log(`[EMAIL MOCK] To: ${to} | Subject: ${subject}`);
         return;
     }
 
-    try {
-        await transporter.sendMail({
-            from: `"Unhire" <${process.env.SMTP_USER}>`,
-            to,
-            subject,
-            html,
-        });
-        console.log(`[EMAIL SENT] To: ${to} | Subject: ${subject}`);
-    } catch (error) {
-        console.error("[EMAIL ERROR]", error);
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        try {
+            await resend.emails.send({
+                from: getFromAddress(),
+                to,
+                subject,
+                html,
+            });
+            console.log(`[EMAIL SENT] To: ${to} | Subject: ${subject}`);
+            return; // Success — exit
+        } catch (error) {
+            console.error(`[EMAIL ERROR] Attempt ${attempt}/${MAX_RETRIES} for ${to}:`, error.message);
+
+            if (attempt < MAX_RETRIES) {
+                const delay = BASE_DELAY_MS * Math.pow(2, attempt - 1);
+                console.log(`[EMAIL RETRY] Retrying in ${delay}ms...`);
+                await sleep(delay);
+            } else {
+                console.error(`[EMAIL FAILED] All ${MAX_RETRIES} attempts failed for ${to} | Subject: ${subject}`);
+            }
+        }
     }
 };
 
@@ -120,4 +168,56 @@ export const sendProjectExpirationEmail = async (client, project) => {
         </div>
     `;
     await sendEmail(client.email, subject, html);
+};
+
+// --- NEW AUTH & NOTIFICATION TEMPLATES ---
+
+/**
+ * Send Verification Code (Login/Reset)
+ */
+export const sendVerificationEmail = async (user, code) => {
+    const subject = `Your Verification Code`;
+    const html = `
+        <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+            <h2>Verification Code</h2>
+            <p>Hello <b>${user.name}</b>,</p>
+            <p>Your verification code is:</p>
+            <h1 style="color: #4CAF50; letter-spacing: 5px;">${code}</h1>
+            <p>This code will expire in 10 minutes.</p>
+            <p>If you didn't request this, please ignore this email.</p>
+        </div>
+    `;
+    await sendEmail(user.email, subject, html);
+};
+
+/**
+ * Send Password Change Success Email
+ */
+export const sendPasswordChangeSuccessEmail = async (user) => {
+    const subject = `Password Changed Successfully`;
+    const html = `
+        <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+            <h2>Password Changed</h2>
+            <p>Hello <b>${user.name}</b>,</p>
+            <p>Your password has been successfully changed.</p>
+            <p>If you did not make this change, please contact support immediately.</p>
+        </div>
+    `;
+    await sendEmail(user.email, subject, html);
+};
+
+/**
+ * Send Draft Rejected Email (to Expert)
+ */
+export const sendDraftRejectedEmail = async (expert, project) => {
+    const subject = `Draft Rejected: ${project.title}`;
+    const html = `
+        <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+            <h2>Draft Rejected</h2>
+            <p>Hello <b>${expert.name}</b>,</p>
+            <p>Your draft for <b>${project.title}</b> was rejected by the client.</p>
+            <p>The project has been unassigned and will be offered to another expert.</p>
+        </div>
+    `;
+    await sendEmail(expert.email, subject, html);
 };

@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
 
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
@@ -10,8 +11,24 @@ const userSchema = new mongoose.Schema({
   // --- NEW FIELDS FOR EXPERTS ---
   skills: {
     type: [String],
+<<<<<<< HEAD
     required: true, // e.g. ["Node.js", "React", "MongoDB"]
   },
+=======
+    default: [], // e.g. ["Node.js", "React", "MongoDB"]
+  },
+  expertStatus: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected', 'none'],
+    default: 'none' // 'none' means they haven't applied yet. 'pending' means applied.
+  },
+  expertProfile: {
+    portfolio: String,
+    github: String,
+    linkedin: String,
+    resume: String, // URL to resume file
+  },
+>>>>>>> auth-overhaul-evu
   rating: {
     type: Number,
     default: 0, // 0–5 scale based on client feedback
@@ -24,6 +41,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: "",
   },
+<<<<<<< HEAD
   linkedin: {
     type: String,
     default: ""
@@ -32,6 +50,10 @@ const userSchema = new mongoose.Schema({
     type: String, // Store file path
     default: ""
   },
+=======
+  verificationCode: String,
+  verificationCodeExpire: Date,
+>>>>>>> auth-overhaul-evu
 },
   { timestamps: true }
 );
@@ -47,6 +69,29 @@ userSchema.pre('save', async function (next) {
 
 userSchema.methods.matchPassword = async function (password) {
   return await bcrypt.compare(password, this.password);
+<<<<<<< HEAD
+=======
+};
+
+// Generate and hash verification code
+userSchema.methods.getVerificationCode = function () {
+  // Generate 6-digit code
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+  // Hash and set to verificationCode field
+  this.verificationCode = crypto.createHash('sha256').update(code).digest('hex');
+
+  // Set expire time (10 minutes)
+  this.verificationCodeExpire = Date.now() + 10 * 60 * 1000;
+
+  return code; // Return unhashed code to send via email
+};
+
+// Verify entered code
+userSchema.methods.verifyCode = function (enteredCode) {
+  const hashedCode = crypto.createHash('sha256').update(enteredCode).digest('hex');
+  return this.verificationCode === hashedCode && this.verificationCodeExpire > Date.now();
+>>>>>>> auth-overhaul-evu
 };
 
 export default mongoose.model('User', userSchema);

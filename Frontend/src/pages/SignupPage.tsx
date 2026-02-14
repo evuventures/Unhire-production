@@ -4,10 +4,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, User, Mail, Lock, Briefcase, ArrowRight, Loader2, Sparkles } from "lucide-react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import apiClient from "../api/client";
+import { useAuth } from "../context/AuthContext";
 
 const SignupPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth(); // Global auth state
 
   const params = new URLSearchParams(location.search);
   const roleFromURL = params.get("role");
@@ -28,25 +31,17 @@ const SignupPage: React.FC = () => {
   useEffect(() => {
     if (roleFromURL) setForm(prev => ({ ...prev, role: roleFromURL }));
 
-    // Auth redirection
-    const token = localStorage.getItem("token");
-    const userStr = localStorage.getItem("user");
-
-    if (token && userStr) {
-      try {
-        const user = JSON.parse(userStr);
-        navigate(user.role === "client" ? "/client-dashboard" : "/expert-dashboard");
-      } catch (e) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-      }
+    // Redirect if already logged in
+    if (user) {
+      navigate(user.role === "client" ? "/client-dashboard" : "/expert-dashboard");
     }
-  }, [roleFromURL, navigate]);
+  }, [roleFromURL, navigate, user]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+<<<<<<< HEAD
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
   const handleResumeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -83,6 +78,8 @@ const SignupPage: React.FC = () => {
     }
   };
 
+=======
+>>>>>>> auth-overhaul-evu
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -96,25 +93,15 @@ const SignupPage: React.FC = () => {
     };
 
     try {
-      const res = await fetch(`${backendUrl}/api/auth/signup`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      // Use apiClient which handles cookies automatically
+      await apiClient.post('/api/auth/signup', payload);
 
-      const data = await res.json();
-
-      if (res.ok && data.token) {
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify(data.user));
-        alert("Signup successful! You can now log in.");
-        navigate("/login");
-      } else {
-        alert(data.message || "Signup failed. Try again.");
-      }
-    } catch (err) {
+      alert("Signup successful! You can now log in.");
+      navigate("/login");
+    } catch (err: any) {
       console.error("Signup error:", err);
-      alert("Error signing up.");
+      const msg = err.response?.data?.message || "Signup failed. Try again.";
+      alert(msg);
     } finally {
       setLoading(false);
     }

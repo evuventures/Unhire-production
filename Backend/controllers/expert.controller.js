@@ -5,6 +5,7 @@ import {
     getExpertProjectsService,
     getExpertProfileService,
 } from "../services/expert.service.js";
+import User from "../models/user.model.js";
 
 /**
  * GET /api/expert/available-projects
@@ -99,10 +100,27 @@ export const getMyProjects = async (req, res) => {
     }
 };
 
-/**
- * GET /api/expert/profile
- * Get expert profile and statistics
- */
+// Submit expert application
+export const submitApplication = async (req, res) => {
+    try {
+        const expertId = req.user.id;
+        const { portfolio, github, linkedin, resume } = req.body;
+
+        const user = await User.findByIdAndUpdate(
+            expertId,
+            {
+                expertStatus: 'pending',
+                expertProfile: { portfolio, github, linkedin, resume }
+            },
+            { new: true }
+        ).select('-password');
+
+        res.json({ message: 'Application submitted successfully', user });
+    } catch (err) {
+        res.status(500).json({ message: 'Error submitting application', error: err.message });
+    }
+};
+
 export const getExpertProfile = async (req, res) => {
     try {
         const expertId = req.user.id;
