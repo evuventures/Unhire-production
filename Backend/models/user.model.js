@@ -13,6 +13,17 @@ const userSchema = new mongoose.Schema({
     type: [String],
     default: [], // e.g. ["Node.js", "React", "MongoDB"]
   },
+  expertStatus: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected', 'none'],
+    default: 'none' // 'none' means they haven't applied yet. 'pending' means applied.
+  },
+  expertProfile: {
+    portfolio: String,
+    github: String,
+    linkedin: String,
+    resume: String, // URL to resume file
+  },
   rating: {
     type: Number,
     default: 0, // 0–5 scale based on client feedback
